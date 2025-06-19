@@ -1,0 +1,36 @@
+{
+  "name": "ao3-api",
+  "version": "0.0.1",
+  "description": "An unofficial AO3 API client for Node.js, written in TypeScript.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ao3",
+    "archiveofourown",
+    "api",
+    "client",
+    "scraper"
+  ],
+  "author": "qian-yu",
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "got": "^14.4.7",
+    "got-scraping": "^4.1.1"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^1.0.0",
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.2"
+  }
+}

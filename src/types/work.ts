@@ -90,7 +90,6 @@ export interface WorkSearchResult {
 export interface Chapter {
   id: string;
   title: string;
-  published: string;
 }
 
 /**

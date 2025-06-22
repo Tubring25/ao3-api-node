@@ -46,13 +46,13 @@ async function getWork(workId: string, options?: { proxyUrl?: string }): Promise
       hits: parseInt(statsNode.find('dd.hits').text().replace(/,/g, ''), 10) || 0
     },
     tags: {
-      rating: $('dd.rating a.tag').text().trim(),
-      warnings: $('dd.warning a.tag').map((i, el) => $(el).text()).get(),
-      category: $('dd.category a.tag').map((i, el) => $(el).text()).get(),
-      fandoms: $('dd.fandom a.tag').map((i, el) => $(el).text()).get(),
-      relationships: $('dd.relationship a.tag').map((i, el) => $(el).text()).get(),
-      characters: $('dd.character a.tag').map((i, el) => $(el).text()).get(),
-      freeforms: $('dd.freeform a.tag').map((i, el) => $(el).text()).get()
+      rating: $('dd.rating a.tag').text().trim().replace(/\s+/g, ' '),
+      warnings: $('dd.warning a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      category: $('dd.category a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      fandoms: $('dd.fandom a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      relationships: $('dd.relationship a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      characters: $('dd.character a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      freeforms: $('dd.freeform a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get()
     }
   }
 
@@ -92,7 +92,6 @@ async function getChapters(workId: string, options?: { proxyUrl?: string }): Pro
       return {
         id: chapterId,
         title: title,
-        published: ''
       }
     }).get()
 
@@ -100,12 +99,10 @@ async function getChapters(workId: string, options?: { proxyUrl?: string }): Pro
   } else {
     // Case 2: Single-chapter work
     const workTitle = $('h2.title.heading').text().trim()
-    const publishedDate = $('dd.published').text().trim()
 
     return [{
       id: workId,
-      title: workTitle,
-      published: publishedDate
+      title: workTitle
     }]
   }
 }

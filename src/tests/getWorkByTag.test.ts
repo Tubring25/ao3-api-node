@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { getTagWorks } from "./index";
+import { getTagWorks } from "../index.js";
 
 vi.mock('got-scraping', async () => ({
   gotScraping: vi.fn().mockImplementation(async (option: {url: string}) => {
     if(option.url.includes('tags/Top%20Caitlyn%20(League%20of%20Legends)/works')) {
-      const mockHtmlPath = path.join(__dirname, 'fixtures', 'tag-CaitlynTop-works.html')
+      const mockHtmlPath = path.join(__dirname, '../fixtures', 'tag-CaitlynTop-works.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return {
         statusCode: 200,
@@ -26,7 +26,7 @@ afterEach(() => {
 
 describe('getTagWorks', () => {
   it('should return a list of works and total result count for a specific tag', async () => {
-    const result = await getTagWorks('Top Caitlyn (League of Legends)')
+    const result = await getTagWorks('Top Caitlyn (League of Legends)', 1)
 
     console.log(result)
     expect(result).toBeDefined()

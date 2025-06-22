@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { getUserWorks } from "./index";
+import { getUserWorks } from "../index.js";
 
 afterEach(async () => {
   vi.clearAllMocks()
@@ -10,7 +10,7 @@ afterEach(async () => {
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: { url: string }) => {
     if (options.url.includes('/users/TheHomelyBadger/works')) {
-      const mockHtmlPath = path.join(__dirname, 'fixtures', 'user-TheHomelyBadger-works.html')
+      const mockHtmlPath = path.join(__dirname, '../fixtures', 'user-TheHomelyBadger-works.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return { statusCode: 200, body: mockHtml }
     }

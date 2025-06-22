@@ -1,12 +1,12 @@
 import { describe, vi, expect, afterEach, it } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { getSeries } from "./index";
+import { getSeries } from "../index.js";
 
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string, proxyUrl?: string}) => {
     if (options.url.includes('/series/4001494')) {
-      const mockHtmlPath = path.join(__dirname, 'fixtures', 'series-4001494.html')
+      const mockHtmlPath = path.join(__dirname, '../fixtures', 'series-4001494.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return { statusCode: 200, body: mockHtml }
     }

@@ -1,12 +1,12 @@
 import { describe, vi, expect, afterEach, it } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { getUserProfile } from "./index";
+import { getUserProfile } from "../index.js";
 
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string, proxyUrl?: string}) => {
     if(options.url.includes('/users/TheHomelyBadger')) {
-      const mockHtmlPath = path.join(__dirname, 'fixtures', 'user-TheHomelyBadger-profile.html')
+      const mockHtmlPath = path.join(__dirname, '../fixtures', 'user-TheHomelyBadger-profile.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return { statusCode: 200, body: mockHtml }
     }
@@ -21,6 +21,8 @@ afterEach(() => {
 describe('getUserProfile', () => {
   it('should return the profile details for a valid user', async () => {
     const profile = await getUserProfile('TheHomelyBadger')
+
+    console.log(profile)
 
     expect(profile).toBeDefined()
     expect(profile.username).toBe('TheHomelyBadger')

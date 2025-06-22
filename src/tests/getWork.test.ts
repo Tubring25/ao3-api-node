@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterAll, afterEach } from 'vitest';
 import { promises as fs } from 'fs'
 import path from 'path'
-import { getWork, type Work } from './index'
+import { getWork, type Work } from '../index.js'
 
 vi.mock('got-scraping', () => {
   return {
@@ -11,7 +11,7 @@ vi.mock('got-scraping', () => {
       const workId = options.url.split('/works/')[1].split('?')[0]
 
       if(workId === '35961484') {
-        const mockHtmlPath = path.join(__dirname, 'fixtures', 'work-35961484.html')
+        const mockHtmlPath = path.join(__dirname, '../fixtures', 'work-35961484.html')
         const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
 
         return Promise.resolve({
@@ -38,6 +38,7 @@ describe('getWork', () => {
     const workId = '35961484'
 
     const work: Work = await getWork(workId)
+    console.log(work)
 
     expect(work).toBeDefined()
     expect(work.id).toBe(workId)

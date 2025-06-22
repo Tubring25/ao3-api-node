@@ -63,7 +63,7 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
  * @param requestOptions Request options
  * @returns A promise that resolves to a paginated list of works
  */
-async function getTagWorks(tag: string, page: number = 1, options: SearchOptions, requestOptions?: {proxyUrl?: string}): Promise<SearchResults> {
+async function getTagWorks(tag: string, page: number = 1, options?: SearchOptions, requestOptions?: {proxyUrl?: string}): Promise<SearchResults> {
   const encodedTag = tag.replace(/\//g, '*s*').replace(/\s/g, '%20')
   const url = `https://archiveofourown.org/tags/${encodedTag}/works?page=${page}`
 
@@ -78,3 +78,5 @@ async function getTagWorks(tag: string, page: number = 1, options: SearchOptions
 
   return parseWorkList(response.body)
 }
+
+export { search, getTagWorks }

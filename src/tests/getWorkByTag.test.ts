@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
 import { getTagWorks } from "../index.js";
+import { gotScraping } from "got-scraping";
 
 vi.mock('got-scraping', async () => ({
   gotScraping: vi.fn().mockImplementation(async (option: {url: string}) => {
@@ -37,4 +38,13 @@ describe('getTagWorks', () => {
     expect(result.works[1].title).toBe('Caught Offside')
     expect(result.works[1].author).toBe('Annien')
   })
+
+  it('should pass the proxyUrl to got-scraping', async () => {
+    const proxyUrl = 'http://localhost:8080';
+    await getTagWorks('Top Caitlyn (League of Legends)', 1, undefined, { proxyUrl });
+    expect(gotScraping).toHaveBeenCalledWith({
+      url: expect.any(String),
+      proxyUrl,
+    });
+  });
 })

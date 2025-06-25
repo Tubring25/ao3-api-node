@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
 import { getUserWorks } from "../index.js";
+import { gotScraping } from "got-scraping";
 
 afterEach(async () => {
   vi.clearAllMocks()
@@ -30,4 +31,12 @@ describe("getUserWorks", () => {
     expect(firstWork.id).toBe('66582997')
     expect(firstWork.title).toBe('nervesteel')
   })
+  it('should pass the proxyUrl to got-scraping', async () => {
+    const proxyUrl = 'http://localhost:8080';
+    await getUserWorks('TheHomelyBadger', 1, { proxyUrl });
+    expect(gotScraping).toHaveBeenCalledWith({
+      url: expect.any(String),
+      proxyUrl,
+    });
+  });
 })

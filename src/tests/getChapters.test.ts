@@ -3,6 +3,7 @@ import { promises as fs } from 'fs'
 import path from 'path'
 
 import { getChapters } from '../index.js'
+import { gotScraping } from 'got-scraping';
 
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string}) => {
@@ -63,5 +64,14 @@ describe('getChapters', () => {
     const invalidWorkId = '000000'
     await expect(getChapters(invalidWorkId)).rejects.toThrow()
   })
+
+  it('should pass the proxyUrl to got-scraping', async () => {
+    const proxyUrl = 'http://localhost:8080';
+    await getChapters('35961484', { proxyUrl });
+    expect(gotScraping).toHaveBeenCalledWith({
+      url: expect.any(String),
+      proxyUrl,
+    });
+  });
 })
 

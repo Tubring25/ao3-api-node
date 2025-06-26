@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest"
 import { getChapterContent } from "../index.js"
 import { promises as fs } from "fs"
 import path from "path"
+import { gotScraping } from "got-scraping"
 
 vi.mock('got-scraping', async () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string}) => {
@@ -48,4 +49,13 @@ describe('getChapterContent', () => {
 
     await expect(getChapterContent(workId, invalidChapterId)).rejects.toThrow()
   })
+
+  it('should pass the proxyUrl to got-scraping', async () => {
+    const proxyUrl = 'http://localhost:8080';
+    await getChapterContent('35961484', '89729749', { proxyUrl });
+    expect(gotScraping).toHaveBeenCalledWith({
+      url: expect.any(String),
+      proxyUrl,
+    });
+  });
 })

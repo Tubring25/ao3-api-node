@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterAll, afterEach } from 'vitest';
 import { promises as fs } from 'fs'
 import path from 'path'
 import { getWork, type Work } from '../index.js'
+import { gotScraping } from 'got-scraping';
 
 vi.mock('got-scraping', () => {
   return {
@@ -56,4 +57,13 @@ describe('getWork', () => {
       `Failed to fetch work ${invalidWorkId}. Status: 404`
     )
   })
+
+  it('should pass the proxyUrl to got-scraping', async () => {
+    const proxyUrl = 'http://localhost:8080';
+    await getWork('35961484', { proxyUrl });
+    expect(gotScraping).toHaveBeenCalledWith({
+      url: expect.any(String),
+      proxyUrl,
+    });
+  });
 })

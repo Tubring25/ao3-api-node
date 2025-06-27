@@ -1,8 +1,8 @@
-import { gotScraping } from "got-scraping";
 import * as cheerio from 'cheerio';
+
 import { Series } from "../types/index.js";
 import { parseWorkBlurb } from "./parsers.js";
-
+import { request } from './request.js';
 /**
  * Gets information and a list of works for a specific series
  * @param seriesId The ID of the series
@@ -12,13 +12,7 @@ import { parseWorkBlurb } from "./parsers.js";
 async function getSeries(seriesId: string, requestOptions?: {proxyUrl?: string}): Promise<Series> {
   const url = `https://archiveofourown.org/series/${seriesId}`
 
-  const response = await gotScraping({url, proxyUrl: requestOptions?.proxyUrl})
-
-  if(response.statusCode !== 200) {
-    throw new Error(`Failed to fetch series ${seriesId}. Status: ${response.statusCode}`)
-  }
-
-  const html = response.body
+  const html = await request(url, requestOptions?.proxyUrl)
   const $ = cheerio.load(html)
 
   const seriesMeta = $('dl.series.meta')

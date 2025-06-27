@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterAll, afterEach } from 'vitest';
 import { promises as fs } from 'fs'
 import path from 'path'
-import { getWork, type Work } from '../index.js'
+import { getWork, type Work, AO3Error } from '../index.js'
 import { gotScraping } from 'got-scraping';
 
 vi.mock('got-scraping', () => {
@@ -54,7 +54,7 @@ describe('getWork', () => {
     const invalidWorkId = '000000'
 
     await expect(getWork(invalidWorkId)).rejects.toThrow(
-      `Failed to fetch work ${invalidWorkId}. Status: 404`
+      new AO3Error(`Failed to fetch https://archiveofourown.org/works/000000?view_adult=true&view_full_work=true. Status: 404`, 404)
     )
   })
 

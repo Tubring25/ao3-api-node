@@ -1,6 +1,7 @@
-import { gotScraping } from "got-scraping";
 import * as cheerio from 'cheerio';
+
 import { Chapter, ChapterContent, Work } from "../types/index.js";
+import { request } from './request.js';
 
 /**
  * Get a work by ID
@@ -8,20 +9,9 @@ import { Chapter, ChapterContent, Work } from "../types/index.js";
  * @returns {Promise<Work>} The work details
  */
 async function getWork(workId: string, options?: { proxyUrl?: string }): Promise<Work> {
-
   const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
 
-  const response = await gotScraping({
-    url: url,
-    proxyUrl: options?.proxyUrl,
-  });
-
-  // Handle HTTP errors
-  if (response.statusCode !== 200) {
-    throw new Error(`Failed to fetch work ${workId}. Status: ${response.statusCode}`)
-  }
-
-  const html = response.body
+  const html = await request(url, options?.proxyUrl)
   const $ = cheerio.load(html)
 
   // Extract work details
@@ -67,42 +57,20 @@ async function getWork(workId: string, options?: { proxyUrl?: string }): Promise
 async function getChapters(workId: string, options?: { proxyUrl?: string }): Promise<Chapter[]> {
   const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
 
-  const response = await gotScraping({
-    url: url,
-    proxyUrl: options?.proxyUrl
-  })
-
-  if (response.statusCode !== 200) {
-    throw new Error(`Failed to fetch chapters for work ${workId}. Status: ${response.statusCode}`)
-  }
-
-  const html = response.body
+  const html = await request(url, options?.proxyUrl)
   const $ = cheerio.load(html)
 
-  // Find the multi-chapter index list
   const chapterOptions = $('#chapter_index select option')
 
   if (chapterOptions.length > 0) {
-    // Case 1: Multi-chapter work
-    const chapters: Chapter[] = chapterOptions.map((i, el) => {
-      const chapterId = $(el).attr('value') || ''
-      const titleText = $(el).text()
-      const title = titleText.replace(/^\d+\.\s*/, '').trim()
-
-      return {
-        id: chapterId,
-        title: title,
-      }
-    }).get()
-
-    return chapters
+    return chapterOptions.map((i, el) => ({
+      id: $(el).attr('value') || '',
+      title: $(el).text().replace(/^\d+\.\s*/, '').trim(),
+    })).get()
   } else {
-    // Case 2: Single-chapter work
-    const workTitle = $('h2.title.heading').text().trim()
-
     return [{
       id: workId,
-      title: workTitle
+      title: $('h2.title.heading').text().trim(),
     }]
   }
 }
@@ -120,16 +88,7 @@ async function getChapterContent(
 ): Promise<ChapterContent> {
   const url = `https://archiveofourown.org/works/${workId}/chapters/${chapterId}`
 
-  const response = await gotScraping({
-    url: url,
-    proxyUrl: options?.proxyUrl
-  })
-
-  if (response.statusCode !== 200) {
-    throw new Error(`Failed to fetch chapter ${chapterId} for work ${workId}. Status: ${response.statusCode}`)
-  }
-
-  const html = response.body
+  const html = await request(url, options?.proxyUrl)
   const $ = cheerio.load(html)
 
   const getUserstuffHtml = (selector: string): string | null => {

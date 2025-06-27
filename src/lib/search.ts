@@ -1,7 +1,7 @@
-import { SearchOptions, SearchResults } from "../types/index.js"
-import { gotScraping } from "got-scraping"
-import { parseWorkList } from "./parsers.js"
-import { categoryMap, ratingMap, sortColumnMap, warningMap } from "./constants.js"
+import { SearchOptions, SearchResults } from "../types/index.js";
+import { request } from "./request.js";
+import { parseWorkList } from "./parsers.js";
+import { categoryMap, ratingMap, sortColumnMap, warningMap } from "./constants.js";
 
 /**
  * Searches for works based on a query and filters
@@ -44,16 +44,9 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
 
   const url = `https://archiveofourown.org/works/search?commit=Search&${params.toString()}`
 
-  const response = await gotScraping({
-    url: url,
-    proxyUrl: requestOptions?.proxyUrl
-  })
+  const html = await request(url, requestOptions?.proxyUrl)
 
-  if (response.statusCode !== 200) {
-    throw new Error(`Failed to search for works. Status: ${response.statusCode}`)
-  }
-
-  return parseWorkList(response.body)
+  return parseWorkList(html)
 }
 
 /**
@@ -67,16 +60,9 @@ async function getTagWorks(tag: string, page: number = 1, options?: SearchOption
   const encodedTag = tag.replace(/\//g, '*s*').replace(/\s/g, '%20')
   const url = `https://archiveofourown.org/tags/${encodedTag}/works?page=${page}`
 
-  const response = await gotScraping({
-    url: url,
-    proxyUrl: requestOptions?.proxyUrl
-  })
+  const html = await request(url, requestOptions?.proxyUrl)
 
-  if (response.statusCode !== 200) {
-    throw new Error(`Failed to search for works. Status: ${response.statusCode}`)
-  }
-
-  return parseWorkList(response.body)
+  return parseWorkList(html)
 }
 
 export { search, getTagWorks }

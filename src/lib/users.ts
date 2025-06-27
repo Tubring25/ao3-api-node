@@ -1,8 +1,8 @@
 import { UserProfile } from "../types/index.js";
-import { gotScraping } from "got-scraping";
 import * as cheerio from 'cheerio';
 import { SearchResults } from "../types/index.js";
 import { parseWorkList } from "./parsers.js";
+import { request } from "./request.js";
 
 /**
  * Gets a user's profile
@@ -14,13 +14,7 @@ async function getUserProfile(username: string, requestOptions?: {proxyUrl?: str
   const encodedUsername = encodeURIComponent(username)
   const url = `https://archiveofourown.org/users/${encodedUsername}/profile`
 
-  const response = await gotScraping({url, proxyUrl: requestOptions?.proxyUrl})
-
-  if(response.statusCode !== 200) {
-    throw new Error(`Failed to fetch user profile for ${username}. Status: ${response.statusCode}`)
-  }
-
-  const html = response.body
+  const html = await request(url, requestOptions?.proxyUrl)
   const $ = cheerio.load(html)
 
   const meta = $('dl.meta')
@@ -47,13 +41,9 @@ async function getUserWorks(username: string, page: number = 1, requestOptions?:
   const encodedUsername = encodeURIComponent(username)
   const url = `https://archiveofourown.org/users/${encodedUsername}/works?page=${page}`
 
-  const response = await gotScraping({url, proxyUrl: requestOptions?.proxyUrl})
+  const html = await request(url, requestOptions?.proxyUrl)
 
-  if(response.statusCode !== 200) {
-    throw new Error(`Failed to fetch user works for ${username}. Status: ${response.statusCode}`)
-  }
-
-  return parseWorkList(response.body)
+  return parseWorkList(html)
 }
 
 export { getUserProfile, getUserWorks }

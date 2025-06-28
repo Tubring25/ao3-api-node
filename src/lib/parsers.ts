@@ -38,6 +38,7 @@ export function parseWorkList(html: string): SearchResults {
 
 
 export function parseWorkBlurb(
+  // @ts-expect-error - Element is not exported from cheerio
   element: cheerio.Element,
   $: cheerio.CheerioAPI
 ): WorkSearchResult {

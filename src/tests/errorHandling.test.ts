@@ -29,7 +29,7 @@ describe('Error Handling', () => {
 
   for (const { fn, error } of testCases) {
     it(`should throw AO3Error for ${fn.toString()}`, async () => {
-      request.mockRejectedValue(error)
+      (request as any).mockRejectedValue(error)
       await expect(fn()).rejects.toThrow(error)
     })
   }

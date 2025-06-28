@@ -49,6 +49,10 @@ import { getWork } from 'ao3-api';
 })();
 ```
 
+## A Note on AO3's Terms of Service
+
+This is an unofficial API and is not affiliated with the Organization for Transformative Works. Please respect the AO3's [Terms of Service](https://archiveofourown.org/tos). To avoid being IP-banned, please do not make an excessive number of requests. It is recommended to introduce a delay between requests.
+
 ## API Reference
 ### Works
 

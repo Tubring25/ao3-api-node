@@ -25,12 +25,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/qian-yu/ao3-api-nodejs"
+    "url": "https://github.com/Tubring25/ao3-api-node"
   },
   "bugs": {
-    "url": "https://github.com/qian-yu/ao3-api-nodejs/issues"
+    "url": "https://github.com/Tubring25/ao3-api-node/issues"
   },
-  "homepage": "https://github.com/qian-yu/ao3-api-nodejs#readme",
+  "homepage": "https://github.com/Tubring25/ao3-api-node#readme",
   "exports": {
     ".": {
       "import": "./dist/index.js",

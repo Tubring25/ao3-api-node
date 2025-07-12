@@ -1,6 +1,6 @@
 {
   "name": "ao3-api-nodejs",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "An unofficial AO3 API client for Node.js, written in TypeScript.",
   "type": "module",
   "main": "dist/index.js",
@@ -33,9 +33,9 @@
   "homepage": "https://github.com/Tubring25/ao3-api-node#readme",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "dependencies": {

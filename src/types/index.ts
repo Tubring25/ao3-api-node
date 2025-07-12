@@ -30,6 +30,19 @@ export type {
   UserProfile
 } from './user.ts'
 
+// Bookmark-related types
+export type {
+  Bookmark,
+  BookmarkSearchResult,
+  BookmarkResults
+} from './bookmark.ts'
+
+// Comment-related types
+export type {
+  Comment,
+  CommentResults
+} from './comment.ts'
+
 // Common types and utilities
 export {
   type RequestOptions,

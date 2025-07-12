@@ -1,15 +1,19 @@
 {
   "name": "ao3-api-nodejs",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "An unofficial AO3 API client for Node.js, written in TypeScript.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
+    "build:types": "tsc --project tsconfig.types.json",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "prepublishOnly": "npm run build"

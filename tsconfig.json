@@ -6,7 +6,7 @@
     "moduleResolution": "Node16",
     "outDir": "./dist",
     "rootDir": "./src",
-    "sourceMap": true,
+    "sourceMap": false,
     "declaration": true,
 
     /* Strict Mode */

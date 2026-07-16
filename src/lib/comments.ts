@@ -1,6 +1,12 @@
 import { request } from './request.js'
 import { parseCommentList } from './parsers.js'
-import { CommentResults } from '../types/index.js'
+import {
+  AO3Error,
+  ChapterNotFoundError,
+  Comment,
+  CommentResults,
+  WorkNotFoundError
+} from '../types/index.js'
 
 /**
  * Get comments for a specific work with threading support
@@ -21,7 +27,7 @@ export async function getWorkComments(
     const result = parseCommentList(html)
 
     // Set workId for all comments since it might not be available in the HTML
-    const setWorkId = (comments: any[]): any[] => {
+    const setWorkId = (comments: Comment[]): Comment[] => {
       return comments.map(comment => ({
         ...comment,
         workId: comment.workId || workId,
@@ -34,8 +40,8 @@ export async function getWorkComments(
       comments: setWorkId(result.comments)
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes('404')) {
-      throw new Error(`Work '${workId}' not found`)
+    if (error instanceof AO3Error && error.statusCode === 404) {
+      throw new WorkNotFoundError(workId)
     }
     throw error
   }
@@ -62,7 +68,7 @@ export async function getChapterComments(
     const result = parseCommentList(html)
 
     // Set workId and chapterId for all comments
-    const setIds = (comments: any[]): any[] => {
+    const setIds = (comments: Comment[]): Comment[] => {
       return comments.map(comment => ({
         ...comment,
         workId: comment.workId || workId,
@@ -76,8 +82,8 @@ export async function getChapterComments(
       comments: setIds(result.comments)
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes('404')) {
-      throw new Error(`Chapter '${chapterId}' not found`)
+    if (error instanceof AO3Error && error.statusCode === 404) {
+      throw new ChapterNotFoundError(workId, chapterId)
     }
     throw error
   }

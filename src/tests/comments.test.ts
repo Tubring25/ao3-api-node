@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { getWorkComments, getChapterComments } from "../index.js";
 import { gotScraping } from "got-scraping";
+import { ChapterNotFoundError, WorkNotFoundError } from "../types/index.js";
 
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string, proxyUrl?: string}) => {
@@ -93,7 +94,7 @@ describe('getWorkComments', () => {
   })
 
   it('should throw error for non-existent work', async () => {
-    await expect(getWorkComments('999999')).rejects.toThrow()
+    await expect(getWorkComments('999999')).rejects.toBeInstanceOf(WorkNotFoundError)
   })
 })
 
@@ -115,6 +116,6 @@ describe('getChapterComments', () => {
   })
 
   it('should throw error for non-existent chapter', async () => {
-    await expect(getChapterComments('123456', '999999')).rejects.toThrow()
+    await expect(getChapterComments('123456', '999999')).rejects.toBeInstanceOf(ChapterNotFoundError)
   })
 })

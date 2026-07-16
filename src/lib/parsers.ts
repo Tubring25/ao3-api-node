@@ -106,7 +106,7 @@ export function parseWorkBookmarkList(html: string): BookmarkResults {
 
       return {
         bookmark: {
-          id: bookmarkElement.attr('id')?.replace('bookmark_', '') || '',
+          id: bookmarkElement.attr('id')?.replace('bookmark_', '') || null,
           workId,
           workTitle: work.title,
           workAuthor: work.author,
@@ -133,7 +133,7 @@ function parseBookmarkBlurb(
 ): BookmarkSearchResult {
   const bookmarkElement = $(element)
   
-  const bookmarkId = bookmarkElement.attr('id')?.replace('bookmark_', '') || ''
+  const bookmarkId = bookmarkElement.attr('id')?.replace('bookmark_', '') || null
   const workLink = bookmarkElement.find('h4.heading a').first()
   const workId = workLink.attr('href')?.match(/\/works\/(\d+)/)?.[1] || ''
   const work = parseBookmarkWork(element, $)
@@ -340,7 +340,8 @@ function buildCommentThreads(comments: Comment[]): Comment[] {
 }
 
 function parseTotal(headingText: string): number {
-  const match = headingText.match(/of ([\d,]+)/)
+  const match = headingText.match(/of\s+([\d,]+)/i)
+    || headingText.match(/([\d,]+)\s+Bookmarks?\b/i)
   return match ? parseInt(match[1].replace(/,/g, ''), 10) : 0
 }
 

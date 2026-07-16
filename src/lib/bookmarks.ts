@@ -1,6 +1,11 @@
 import { request } from './request.js'
 import { parseBookmarkList, parseWorkBookmarkList } from './parsers.js'
-import { BookmarkResults } from '../types/index.js'
+import {
+  AO3Error,
+  BookmarkResults,
+  UserNotFoundError,
+  WorkNotFoundError
+} from '../types/index.js'
 
 /**
  * Get a user's bookmarks with pagination
@@ -20,8 +25,8 @@ export async function getUserBookmarks(
     const html = await request(url, proxyUrl)
     return parseBookmarkList(html)
   } catch (error) {
-    if (error instanceof Error && error.message.includes('404')) {
-      throw new Error(`User '${username}' not found or has no public bookmarks`)
+    if (error instanceof AO3Error && error.statusCode === 404) {
+      throw new UserNotFoundError(username)
     }
     throw error
   }
@@ -45,8 +50,8 @@ export async function getWorkBookmarks(
     const html = await request(url, proxyUrl)
     return parseWorkBookmarkList(html)
   } catch (error) {
-    if (error instanceof Error && error.message.includes('404')) {
-      throw new Error(`Work '${workId}' not found or has no public bookmarks`)
+    if (error instanceof AO3Error && error.statusCode === 404) {
+      throw new WorkNotFoundError(workId)
     }
     throw error
   }

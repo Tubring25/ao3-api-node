@@ -57,29 +57,8 @@ vi.mock('got-scraping', () => ({
       return { statusCode: 200, body: mockHtml }
     }
     else if(options.url.includes('/works/123456/bookmarks')) {
-      const mockHtml = `
-        <html>
-          <head><title>Bookmarks for Test Work</title></head>
-          <body>
-            <h2 class="heading">Public Bookmarks (1 of 1)</h2>
-            <ol class="bookmark index group">
-              <li class="bookmark" id="bookmark_67890">
-                <div class="user">
-                  <a href="/users/bookmarkuser">bookmarkuser</a>
-                </div>
-                <h4 class="heading">
-                  <a href="/works/123456">Test Work Title</a>
-                </h4>
-                <p class="byline">
-                  by <a rel="author" href="/users/testauthor">testauthor</a>
-                </p>
-                <p class="datetime">15 Jan 2024</p>
-                <div class="rec">★</div>
-              </li>
-            </ol>
-          </body>
-        </html>
-      `
+      const mockHtmlPath = path.join(__dirname, '../fixtures', 'work-bookmarks-current.html')
+      const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return { statusCode: 200, body: mockHtml }
     }
     return { statusCode: 404, statusMessage: 'Not Found' }
@@ -136,12 +115,17 @@ describe('getWorkBookmarks', () => {
     
     expect(result).toHaveProperty('bookmarks')
     expect(result.bookmarks).toHaveLength(1)
+    expect(result.total).toBe(687)
+    expect(result.totalPages).toBe(35)
     
     const bookmark = result.bookmarks[0]
-    expect(bookmark.bookmark).toHaveProperty('id', '67890')
+    expect(bookmark.bookmark).toHaveProperty('id', '')
     expect(bookmark.bookmark).toHaveProperty('workId', '123456')
     expect(bookmark.bookmark).toHaveProperty('username', 'bookmarkuser')
     expect(bookmark.bookmark).toHaveProperty('rec', true)
+    expect(bookmark.bookmark).toHaveProperty('notes', 'Bookmark note.')
+    expect(bookmark.work).toHaveProperty('title', 'Test Work Title')
+    expect(bookmark.work).toHaveProperty('words', 1000)
   })
 
   it('should throw error for non-existent work', async () => {

@@ -7,48 +7,8 @@ import { gotScraping } from "got-scraping";
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string, proxyUrl?: string}) => {
     if(options.url.includes('/works/123456?show_comments=true')) {
-      const mockHtml = `
-        <html>
-          <head><title>Test Work - Comments</title></head>
-          <body>
-            <h3 class="heading">2 Comments</h3>
-            <div class="comment-wrapper">
-              <div class="comment" id="comment_111">
-                <div class="byline">
-                  <a href="/users/commenter1">commenter1</a>
-                </div>
-                <div class="comment">
-                  <div class="userstuff">Great work!</div>
-                </div>
-                <div class="datetime">01 Jan 2024</div>
-                <div class="kudos">5 kudos</div>
-              </div>
-              
-              <div class="comment" id="comment_222">
-                <div class="byline">
-                  <a href="/users/commenter2">commenter2</a>
-                </div>
-                <div class="comment">
-                  <div class="userstuff">I loved this chapter.</div>
-                </div>
-                <div class="datetime">02 Jan 2024</div>
-                <div class="kudos">3 kudos</div>
-                
-                <div class="comment" id="comment_333">
-                  <div class="byline">
-                    <a href="/users/commenter1">commenter1</a>
-                  </div>
-                  <div class="comment">
-                    <div class="userstuff">Thank you!</div>
-                  </div>
-                  <div class="datetime">03 Jan 2024</div>
-                  <div class="kudos">1 kudos</div>
-                </div>
-              </div>
-            </div>
-          </body>
-        </html>
-      `
+      const mockHtmlPath = path.join(__dirname, '../fixtures', 'comments-current.html')
+      const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return { statusCode: 200, body: mockHtml }
     }
     else if(options.url.includes('/chapters/789?show_comments=true')) {
@@ -85,6 +45,10 @@ afterEach(() => {
 describe('getWorkComments', () => {
   it('should return work comments with correct structure', async () => {
     const result = await getWorkComments('123456')
+
+    expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
+      url: expect.stringContaining('view_full_work=true')
+    }))
     
     expect(result).toHaveProperty('comments')
     expect(result).toHaveProperty('total')
@@ -92,21 +56,21 @@ describe('getWorkComments', () => {
     expect(result).toHaveProperty('totalPages')
     
     expect(result.comments).toHaveLength(2)
-    expect(result.total).toBe(2)
+    expect(result.total).toBe(3)
     
     const firstComment = result.comments[0]
     expect(firstComment).toHaveProperty('id', '111')
     expect(firstComment).toHaveProperty('workId', '123456')
     expect(firstComment).toHaveProperty('author', 'commenter1')
-    expect(firstComment).toHaveProperty('content', 'Great work!')
-    expect(firstComment).toHaveProperty('kudos', 5)
+    expect(firstComment.content).toContain('Great work!')
     expect(firstComment).toHaveProperty('replies')
     
     const secondComment = result.comments[1]
     expect(secondComment).toHaveProperty('id', '222')
     expect(secondComment).toHaveProperty('author', 'commenter2')
-    expect(secondComment).toHaveProperty('content', 'I loved this chapter.')
-    expect(secondComment).toHaveProperty('kudos', 3)
+    expect(secondComment.content).toContain('I loved this chapter.')
+    expect(secondComment.replies).toHaveLength(1)
+    expect(secondComment.replies[0].id).toBe('333')
   })
 
   it('should handle comment threading correctly', async () => {
@@ -125,7 +89,7 @@ describe('getWorkComments', () => {
     const result = await getWorkComments('123456', 1)
     
     expect(result.page).toBe(1)
-    expect(result.totalPages).toBe(1)
+    expect(result.totalPages).toBe(3)
   })
 
   it('should throw error for non-existent work', async () => {

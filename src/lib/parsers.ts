@@ -68,28 +68,62 @@ export function parseWorkBlurb(
  */
 export function parseBookmarkList(html: string): BookmarkResults {
   const $ = cheerio.load(html)
-  
-  let total = 0
-  const headingText = $('h2.heading').text().trim()
-  const match = headingText.match(/of ([\d,]+)/)
-  if (match && match[1]) {
-    total = parseInt(match[1].replace(/,/g, ''), 10)
-  }
+  const total = parseTotal($('h2.heading').text())
 
   const bookmarks: BookmarkSearchResult[] = $('ol.bookmark li.bookmark')
     .map((i, el) => parseBookmarkBlurb(el, $))
     .get()
 
-  const currentPage = parseInt($('.pagination .current').text() || '1', 10)
-  const lastPageLink = $('.pagination a').last()
-  const totalPages = parseInt(lastPageLink.text() || '1', 10)
+  const { page, totalPages } = parsePagination($)
 
   return { 
     bookmarks, 
     total, 
-    page: currentPage, 
+    page,
     totalPages 
   }
+}
+
+/** Parses the distinct layout used by a work's public bookmarks page. */
+export function parseWorkBookmarkList(html: string): BookmarkResults {
+  const $ = cheerio.load(html)
+  const total = parseTotal($('h2.heading').text())
+  const { page, totalPages } = parsePagination($)
+  const workElement = $('ol.bookmark > li.work').get(0)
+
+  if (!workElement) {
+    return { bookmarks: [], total, page, totalPages }
+  }
+
+  const work = parseBookmarkWork(workElement, $)
+  const workLink = $(workElement).find('h4.heading a[href*="/works/"]').first()
+  const workId = workLink.attr('href')?.match(/\/works\/(\d+)/)?.[1] || ''
+
+  const bookmarks: BookmarkSearchResult[] = $('ol.bookmark > li.user')
+    .map((i, el) => {
+      const bookmarkElement = $(el)
+      const userLink = bookmarkElement.find('h5.byline a[href*="/users/"]').first()
+
+      return {
+        bookmark: {
+          id: bookmarkElement.attr('id')?.replace('bookmark_', '') || '',
+          workId,
+          workTitle: work.title,
+          workAuthor: work.author,
+          userId: userLink.attr('href')?.match(/\/users\/([^/]+)/)?.[1] || '',
+          username: userLink.text().trim(),
+          created: bookmarkElement.find('.datetime').text().trim(),
+          notes: bookmarkElement.find('.notes').first().text().trim() || null,
+          tags: bookmarkElement.find('.tag').map((j, tag) => $(tag).text().trim()).get(),
+          public: !bookmarkElement.find('.private').length,
+          rec: !!bookmarkElement.find('.rec').length
+        },
+        work
+      }
+    })
+    .get()
+
+  return { bookmarks, total, page, totalPages }
 }
 
 function parseBookmarkBlurb(
@@ -102,8 +136,7 @@ function parseBookmarkBlurb(
   const bookmarkId = bookmarkElement.attr('id')?.replace('bookmark_', '') || ''
   const workLink = bookmarkElement.find('h4.heading a').first()
   const workId = workLink.attr('href')?.match(/\/works\/(\d+)/)?.[1] || ''
-  const workTitle = workLink.text().trim()
-  const workAuthor = bookmarkElement.find('a[rel="author"]').text().trim()
+  const work = parseBookmarkWork(element, $)
   
   const userLink = bookmarkElement.find('.user a')
   const username = userLink.text().trim()
@@ -120,24 +153,12 @@ function parseBookmarkBlurb(
   const isPublic = !bookmarkElement.find('.private').length
   const isRec = !!bookmarkElement.find('.rec').length
 
-  const parseStat = (className: string): number => {
-    const text = bookmarkElement.find(`dd.${className}`).text().replace(/,/g, '')
-    return parseInt(text, 10) || 0
-  }
-
-  const chapterText = bookmarkElement.find('dd.chapters').text().trim()
-  const chapterMatch = chapterText.match(/(\d+)\/(\d+|\?)/)
-  const chapters = {
-    posted: chapterMatch ? parseInt(chapterMatch[1], 10) : 1,
-    total: chapterMatch && chapterMatch[2] !== '?' ? parseInt(chapterMatch[2], 10) : null
-  }
-
   return {
     bookmark: {
       id: bookmarkId,
       workId,
-      workTitle,
-      workAuthor,
+      workTitle: work.title,
+      workAuthor: work.author,
       userId,
       username,
       created,
@@ -146,40 +167,47 @@ function parseBookmarkBlurb(
       public: isPublic,
       rec: isRec
     },
-    work: {
-      title: workTitle,
-      author: workAuthor,
-      summary: bookmarkElement.find('.summary blockquote').text().trim(),
-      rating: bookmarkElement.find('.rating .text').text().trim(),
-      warnings: bookmarkElement.find('.warnings .text')
-        .map((i, el) => $(el).text().trim())
-        .get(),
-      categories: bookmarkElement.find('.category .text')
-        .map((i, el) => $(el).text().trim())
-        .get(),
-      fandoms: bookmarkElement.find('.fandoms a')
-        .map((i, el) => $(el).text().trim())
-        .get(),
-      relationships: bookmarkElement.find('.relationships a')
-        .map((i, el) => $(el).text().trim())
-        .get(),
-      characters: bookmarkElement.find('.characters a')
-        .map((i, el) => $(el).text().trim())
-        .get(),
-      additionalTags: bookmarkElement.find('.freeforms a')
-        .map((i, el) => $(el).text().trim())
-        .get(),
-      language: bookmarkElement.find('dd.language').text().trim(),
-      published: bookmarkElement.find('dd.published').text().trim(),
-      updated: bookmarkElement.find('dd.status').text().trim() || null,
-      words: parseStat('words'),
-      chapters,
-      completed: chapterMatch ? chapterMatch[1] === chapterMatch[2] : true,
-      kudos: parseStat('kudos'),
-      comments: parseStat('comments'),
-      bookmarks: parseStat('bookmarks'),
-      hits: parseStat('hits')
-    }
+    work
+  }
+}
+
+function parseBookmarkWork(
+  // @ts-expect-error - Element is not exported from cheerio
+  element: cheerio.Element,
+  $: cheerio.CheerioAPI
+): BookmarkSearchResult['work'] {
+  const workElement = $(element)
+  const parseStat = (className: string): number => {
+    const text = workElement.find(`dd.${className}`).text().replace(/,/g, '')
+    return parseInt(text, 10) || 0
+  }
+  const chapterText = workElement.find('dd.chapters').text().trim()
+  const chapterMatch = chapterText.match(/(\d+)\/(\d+|\?)/)
+
+  return {
+    title: workElement.find('h4.heading a[href*="/works/"]').first().text().trim(),
+    author: workElement.find('a[rel="author"]').text().trim(),
+    summary: workElement.find('.summary').first().text().trim(),
+    rating: workElement.find('.rating .text').text().trim(),
+    warnings: workElement.find('.warnings .text').map((i, el) => $(el).text().trim()).get(),
+    categories: workElement.find('.category .text').map((i, el) => $(el).text().trim()).get(),
+    fandoms: workElement.find('.fandoms a').map((i, el) => $(el).text().trim()).get(),
+    relationships: workElement.find('.relationships a').map((i, el) => $(el).text().trim()).get(),
+    characters: workElement.find('.characters a').map((i, el) => $(el).text().trim()).get(),
+    additionalTags: workElement.find('.freeforms a').map((i, el) => $(el).text().trim()).get(),
+    language: workElement.find('dd.language').text().trim(),
+    published: workElement.find('dd.published').text().trim(),
+    updated: workElement.find('dd.status').text().trim() || null,
+    words: parseStat('words'),
+    chapters: {
+      posted: chapterMatch ? parseInt(chapterMatch[1], 10) : 1,
+      total: chapterMatch && chapterMatch[2] !== '?' ? parseInt(chapterMatch[2], 10) : null
+    },
+    completed: chapterMatch ? chapterMatch[1] === chapterMatch[2] : true,
+    kudos: parseStat('kudos'),
+    comments: parseStat('comments'),
+    bookmarks: parseStat('bookmarks'),
+    hits: parseStat('hits')
   }
 }
 
@@ -190,26 +218,23 @@ function parseBookmarkBlurb(
  */
 export function parseCommentList(html: string): CommentResults {
   const $ = cheerio.load(html)
-  
-  let total = 0
-  const headingText = $('h3.heading').text().trim()
-  const match = headingText.match(/(\d+) Comments/)
-  if (match && match[1]) {
-    total = parseInt(match[1], 10)
-  }
+  const commentsToggleText = $('a[href*="/comments/hide_comments"]').text()
+  const currentTotalMatch = commentsToggleText.match(/\(([\d,]+)\)/)
+  const legacyTotalMatch = $('h3.heading').text().match(/([\d,]+) Comments/)
+  const totalMatch = currentTotalMatch || legacyTotalMatch
+  const total = totalMatch ? parseInt(totalMatch[1].replace(/,/g, ''), 10) : 0
 
-  const comments: Comment[] = $('.comment')
+  const comments: Comment[] = $('[id^="comment_"].comment')
+    .filter((i, el) => /^comment_\d+$/.test($(el).attr('id') || ''))
     .map((i, el) => parseComment(el, $))
     .get()
 
-  const currentPage = parseInt($('.pagination .current').text() || '1', 10)
-  const lastPageLink = $('.pagination a').last()
-  const totalPages = parseInt(lastPageLink.text() || '1', 10)
+  const { page, totalPages } = parsePagination($)
 
   return { 
     comments: buildCommentThreads(comments), 
     total, 
-    page: currentPage, 
+    page,
     totalPages 
   }
 }
@@ -239,17 +264,28 @@ function parseComment(
   const authorId = authorElement.attr('href')?.replace('/users/', '') || undefined
   const isAuthorGuest = authorElement.hasClass('guest')
   
-  const content = commentElement.find('.comment .userstuff').html() || ''
+  const directContent = commentElement.children('.userstuff').first()
+  const legacyContent = commentElement.children('.comment').first().find('.userstuff').first()
+  const content = (directContent.length ? directContent : legacyContent).html() || ''
   const posted = commentElement.find('.datetime').text().trim()
   const edited = commentElement.find('.edited').text().trim() || undefined
   
-  const parentElement = commentElement.parent().closest('.comment')
-  const parentId = parentElement.length ? parentElement.attr('id')?.replace('comment_', '') : undefined
-  
+  const actionLinks = commentElement.find('ul.actions a')
+  const actionCommentId = (label: string): string | undefined => {
+    const href = actionLinks
+      .filter((i, link) => $(link).text().trim() === label)
+      .first()
+      .attr('href')
+    return href?.match(/\/comments\/(\d+)/)?.[1]
+  }
+  const parentElement = commentElement.parents('[id^="comment_"].comment').first()
+  const parentId = actionCommentId('Parent')
+    || (parentElement.length ? parentElement.attr('id')?.replace('comment_', '') : undefined)
+
   const threadElement = commentElement.closest('.thread')
-  const threadId = threadElement.attr('id')?.replace('thread_', '') || id
-  
-  const depth = commentElement.parents('.comment').length
+  const threadId = actionCommentId('Parent Thread')
+    || threadElement.attr('id')?.replace('thread_', '')
+    || id
   
   const kudosText = commentElement.find('.kudos').text()
   const kudosMatch = kudosText.match(/(\d+)/)
@@ -267,7 +303,7 @@ function parseComment(
     edited,
     parentId,
     threadId,
-    depth,
+    depth: 0,
     kudos,
     replies: []
   }
@@ -293,6 +329,27 @@ function buildCommentThreads(comments: Comment[]): Comment[] {
       rootComments.push(commentCopy)
     }
   })
+
+  const setDepth = (comment: Comment, depth: number) => {
+    comment.depth = depth
+    comment.replies.forEach(reply => setDepth(reply, depth + 1))
+  }
+  rootComments.forEach(comment => setDepth(comment, 0))
   
   return rootComments
+}
+
+function parseTotal(headingText: string): number {
+  const match = headingText.match(/of ([\d,]+)/)
+  return match ? parseInt(match[1].replace(/,/g, ''), 10) : 0
+}
+
+function parsePagination($: cheerio.CheerioAPI): { page: number, totalPages: number } {
+  const page = parseInt($('.pagination .current').first().text(), 10) || 1
+  const pageNumbers = $('.pagination .current, .pagination a')
+    .map((i, el) => parseInt($(el).text(), 10))
+    .get()
+    .filter(Number.isFinite)
+
+  return { page, totalPages: Math.max(page, ...pageNumbers) }
 }

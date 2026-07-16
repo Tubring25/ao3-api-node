@@ -34,9 +34,9 @@ describe("getUserWorks", () => {
   it('should pass the proxyUrl to got-scraping', async () => {
     const proxyUrl = 'http://localhost:8080';
     await getUserWorks('TheHomelyBadger', 1, { proxyUrl });
-    expect(gotScraping).toHaveBeenCalledWith({
+    expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
       url: expect.any(String),
       proxyUrl,
-    });
+    }));
   });
 })

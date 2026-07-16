@@ -10,13 +10,13 @@
     "dist/lib/**/*.d.ts",
     "dist/index.js",
     "dist/index.d.ts",
+    "dist/types/**/*.js",
     "dist/types/**/*.d.ts",
     "LICENSE",
     "README.md"
   ],
   "scripts": {
     "build": "rm -rf dist && tsc",
-    "build:types": "tsc --project tsconfig.types.json",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "prepublishOnly": "npm run build"
@@ -41,8 +41,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "dependencies": {

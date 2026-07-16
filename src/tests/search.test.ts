@@ -83,9 +83,9 @@ describe('search', () => {
   it('should pass the proxyUrl to got-scraping', async () => {
     const proxyUrl = 'http://localhost:8080';
     await search({ query: 'test' }, { proxyUrl });
-    expect(gotScraping).toHaveBeenCalledWith({
+    expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
       url: expect.any(String),
       proxyUrl,
-    });
+    }));
   });
 })

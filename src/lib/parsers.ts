@@ -33,7 +33,9 @@ export function parseWorkList(html: string): SearchResults {
     .map((i, el) => parseWorkBlurb(el, $))
     .get()
 
-  return { works, totalResults }
+  const { page, totalPages } = parsePagination($)
+
+  return { works, totalResults, page, totalPages }
 }
 
 

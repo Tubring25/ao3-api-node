@@ -112,6 +112,7 @@ Accept the same query parameters as the AO3 website.
 import { search } from 'ao3-api-nodejs';
 
 const results = await search({
+  page: 2,
   query: 'coffee shop au',
   fandoms: ['Arcane: League of Legends (Cartoon 2021)'],
   ratings: ['Teen And Up Audiences'],
@@ -119,20 +120,28 @@ const results = await search({
   sortColumn: 'Kudos'
 });
 
-console.log(`First result: ${results.works[0].title} by ${results.works[0].author}`); // Piltover's Finest (cup of coffee) by SunsetSharkbite
+console.log(`Page ${results.page} of ${results.totalPages}`);
+console.log(`First result: ${results.works[0].title} by ${results.works[0].author}`);
 ```
 
 #### `getTagWorks`
 Get a paginated list of works for a specific tag.
 
-**Signature:** `getTagWorks(tag: string, page: number = 1, options?: SearchOptions, requestOptions?: { proxyUrl?: string }): Promise<SearchResults>`
+**Signature:** `getTagWorks(tag: string, page: number = 1, options?: TagWorksOptions, requestOptions?: { proxyUrl?: string }): Promise<SearchResults>`
 
 **Example:**
 ```typescript
 import { getTagWorks } from 'ao3-api-nodejs';
 
-const results = await getTagWorks('CaitlynTop', 1);
-console.log(`Found ${results.totalResults} works with this tag.`);
+const results = await getTagWorks('Top Caitlyn (League of Legends)', 1, {
+  complete: true,
+  wordsFrom: 1000,
+  otherTags: ['Fluff'],
+  ratings: ['Teen And Up Audiences'],
+  sortColumn: 'Kudos'
+});
+
+console.log(`Found ${results.totalResults} works across ${results.totalPages} pages.`);
 ```
 
 ### Series

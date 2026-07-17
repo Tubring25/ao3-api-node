@@ -16,6 +16,7 @@ export type {
   SortColumn,
   SortDirection,
   SearchOptions,
+  TagWorksOptions,
   SearchResults
 } from './search.js'
 

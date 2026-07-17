@@ -1,4 +1,4 @@
-import { SearchOptions, SearchResults } from "../types/index.js";
+import { SearchOptions, SearchResults, TagWorksOptions } from "../types/index.js";
 import { request } from "./request.js";
 import { parseWorkList } from "./parsers.js";
 import { categoryMap, ratingMap, sortColumnMap, warningMap } from "./constants.js";
@@ -14,6 +14,7 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
   const addParam = (key: string, value: string | undefined) => value && params.set(key, value)
   const addArrayParam = (key: string, values: string[] | undefined) => values?.forEach(v => params.append(key, v))
 
+  if (options.page !== undefined) params.set('page', String(options.page))
   addParam('work_search[query]', options.query)
   addParam('work_search[title]', options.title)
   addParam('work_search[creators]', options.creators)
@@ -52,13 +53,37 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
 /**
  * Gets a paginated list of works for a specific tag
  * @param tag The tag to search for
- * @param options Search options
+ * @param page The page number to fetch
+ * @param options Tag listing filters
  * @param requestOptions Request options
  * @returns A promise that resolves to a paginated list of works
  */
-async function getTagWorks(tag: string, page: number = 1, options?: SearchOptions, requestOptions?: {proxyUrl?: string}): Promise<SearchResults> {
-  const encodedTag = tag.replace(/\//g, '*s*').replace(/\s/g, '%20')
-  const url = `https://archiveofourown.org/tags/${encodedTag}/works?page=${page}`
+async function getTagWorks(tag: string, page: number = 1, options: TagWorksOptions = {}, requestOptions?: {proxyUrl?: string}): Promise<SearchResults> {
+  const params = new URLSearchParams({
+    page: String(page),
+    tag_id: tag
+  })
+
+  const addParam = (key: string, value: string | number | undefined) => {
+    if (value !== undefined && value !== '') params.set(key, String(value))
+  }
+  const addArrayParam = (key: string, values: string[] | undefined) => values?.forEach(value => params.append(key, value))
+
+  addParam('work_search[query]', options.query)
+  if (options.complete !== undefined) params.set('work_search[complete]', options.complete ? 'T' : 'F')
+  addParam('work_search[words_from]', options.wordsFrom)
+  addParam('work_search[words_to]', options.wordsTo)
+  addParam('work_search[date_from]', options.dateFrom)
+  addParam('work_search[date_to]', options.dateTo)
+  addParam('work_search[language_id]', options.language)
+  if (options.otherTags?.length) params.set('work_search[other_tag_names]', options.otherTags.join(','))
+
+  addArrayParam('include_work_search[rating_ids][]', options.ratings?.map(rating => ratingMap[rating]))
+  addArrayParam('include_work_search[archive_warning_ids][]', options.warnings?.map(warning => warningMap[warning]))
+  addArrayParam('include_work_search[category_ids][]', options.categories?.map(category => categoryMap[category]))
+  params.set('work_search[sort_column]', sortColumnMap[options.sortColumn || 'Date Updated'])
+
+  const url = `https://archiveofourown.org/works?${params.toString()}`
 
   const html = await request(url, requestOptions?.proxyUrl)
 

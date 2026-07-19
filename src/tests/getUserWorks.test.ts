@@ -26,6 +26,8 @@ describe("getUserWorks", () => {
     expect(results).toBeDefined()
     expect(results.works.length).toBe(20)
     expect(results.totalResults).toBe(49)
+    expect(results.page).toBe(1)
+    expect(results.totalPages).toBe(3)
 
     const firstWork = results.works[0]
     expect(firstWork.id).toBe('66582997')
@@ -34,9 +36,9 @@ describe("getUserWorks", () => {
   it('should pass the proxyUrl to got-scraping', async () => {
     const proxyUrl = 'http://localhost:8080';
     await getUserWorks('TheHomelyBadger', 1, { proxyUrl });
-    expect(gotScraping).toHaveBeenCalledWith({
+    expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
       url: expect.any(String),
       proxyUrl,
-    });
+    }));
   });
 })

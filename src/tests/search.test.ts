@@ -5,6 +5,7 @@ import { search, SearchOptions } from '../index.js'
 import { gotScraping } from 'got-scraping'
 
 const allParams: SearchOptions = {
+  page: 2,
   query: 'test query',
   title: 'test title',
   creators: 'test creators',
@@ -52,11 +53,11 @@ describe('search', () => {
   it('should return a list of works and total result count form a search query', async () => {
     const results = await search({query: 'Kiss me, Cupcake'})
 
-    console.log(results)
-
     expect(results).toBeDefined()
     expect(results.works.length).toBe(20)
     expect(results.totalResults).toBeGreaterThan(20)
+    expect(results.page).toBe(1)
+    expect(results.totalPages).toBe(2)
     
     const firstWork = results.works[0]
     expect(firstWork.id).toBe('35473240')
@@ -70,6 +71,8 @@ describe('search', () => {
     const results = await search(allParams)
 
     expect(results).toBeDefined()
+    const call = vi.mocked(gotScraping).mock.calls[0][0] as { url: string }
+    expect(new URL(call.url).searchParams.get('page')).toBe('2')
   })
 
   it('should build a URL with all parameters except complete', async () => {
@@ -83,9 +86,9 @@ describe('search', () => {
   it('should pass the proxyUrl to got-scraping', async () => {
     const proxyUrl = 'http://localhost:8080';
     await search({ query: 'test' }, { proxyUrl });
-    expect(gotScraping).toHaveBeenCalledWith({
+    expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
       url: expect.any(String),
       proxyUrl,
-    });
+    }));
   });
 })

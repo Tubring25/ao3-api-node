@@ -1,5 +1,5 @@
 export interface Bookmark {
-  id: string;
+  id: string | null;
   workId: string;
   workTitle: string;
   workAuthor: string;

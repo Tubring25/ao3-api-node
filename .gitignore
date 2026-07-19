@@ -135,5 +135,8 @@ dist
 
 # Build outputs
 build/
-lib/
+/lib/
 dist/
+
+# macOS metadata
+.DS_Store

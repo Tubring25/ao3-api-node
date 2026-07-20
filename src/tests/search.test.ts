@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { promises as fs } from 'fs'
 import path from 'path'
-import { search, SearchOptions } from '../index.js'
+import { CrossoverMode, search, SearchOptions } from '../index.js'
 import { gotScraping } from 'got-scraping'
 
 const allParams: SearchOptions = {
@@ -11,6 +11,7 @@ const allParams: SearchOptions = {
   creators: 'test creators',
   revisedAt: '2022-01-01',
   complete: true,
+  crossover: 'exclude',
   singleChapter: true,
   wordCount: '>1000',
   language: 'en',
@@ -22,12 +23,18 @@ const allParams: SearchOptions = {
   characters: ['char1', 'char2'],
   relationships: ['rel1', 'rel2'],
   freeforms: ['free1', 'free2'],
-  ratings: ['Teen And Up Audiences'],
+  rating: 'Teen And Up Audiences',
   warnings: ['Major Character Death'],
   categories: ['F/F'],
   sortColumn: 'Kudos',
   sortDirection: 'asc'
 }
+
+const crossoverCases: Array<[CrossoverMode, string]> = [
+  ['include', ''],
+  ['exclude', 'F'],
+  ['only', 'T'],
+]
 
 vi.mock('got-scraping', async () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string}) => {
@@ -51,14 +58,14 @@ afterEach(() => {
 })
 describe('search', () => {
   it('should return a list of works and total result count form a search query', async () => {
-    const results = await search({query: 'Kiss me, Cupcake'})
+    const results = await search({ query: 'Kiss me, Cupcake' })
 
     expect(results).toBeDefined()
     expect(results.works.length).toBe(20)
     expect(results.totalResults).toBeGreaterThan(20)
     expect(results.page).toBe(1)
     expect(results.totalPages).toBe(2)
-    
+
     const firstWork = results.works[0]
     expect(firstWork.id).toBe('35473240')
     expect(firstWork.title).toBe('Kiss me, cupcake')
@@ -72,16 +79,30 @@ describe('search', () => {
 
     expect(results).toBeDefined()
     const call = vi.mocked(gotScraping).mock.calls[0][0] as { url: string }
-    expect(new URL(call.url).searchParams.get('page')).toBe('2')
+    const params = new URL(call.url).searchParams
+    expect(params.get('page')).toBe('2')
+    expect(params.get('work_search[crossover]')).toBe('F')
+    expect(params.get('work_search[rating_ids]')).toBe('11')
+    expect(params.get('work_search[rating_ids][]')).toBe(null)
+    expect(params.get('work_search[fandom_names]')).toBe('fandom1,fandom2')
+    expect(params.get('work_search[character_names]')).toBe('char1,char2')
+    expect(params.get('work_search[relationship_names]')).toBe('rel1,rel2')
+    expect(params.get('work_search[freeform_names]')).toBe('free1,free2')
+    expect(params.get('work_search[archive_warning_ids][]')).toBe('18')
+    expect(params.get('work_search[category_ids][]')).toBe('116')
   })
 
-  it('should build a URL with all parameters except complete', async () => {
+  it('should build a URL with complete set to false', async () => {
     const results = await search({
       ...allParams,
       complete: false,
     })
 
     expect(results).toBeDefined()
+    const call = vi.mocked(gotScraping).mock.calls[0][0] as { url: string }
+    const params = new URL(call.url).searchParams
+
+    expect(params.get('work_search[complete]')).toBe('F')
   })
   it('should pass the proxyUrl to got-scraping', async () => {
     const proxyUrl = 'http://localhost:8080';
@@ -91,4 +112,16 @@ describe('search', () => {
       proxyUrl,
     }));
   });
+
+  it.each(crossoverCases)('should encode crossover modes', async(mode: string, expected: string) => {
+    const result = await search({
+      ...allParams,
+      crossover: mode as CrossoverMode,
+    })
+
+    expect(result).toBeDefined()
+    const call = vi.mocked(gotScraping).mock.calls[0][0] as { url: string }
+    const params = new URL(call.url).searchParams
+    expect(params.get('work_search[crossover]')).toBe(expected)
+  })
 })

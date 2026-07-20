@@ -115,8 +115,9 @@ const results = await search({
   page: 2,
   query: 'coffee shop au',
   fandoms: ['Arcane: League of Legends (Cartoon 2021)'],
-  ratings: ['Teen And Up Audiences'],
+  rating: 'Teen And Up Audiences',
   complete: true,
+  crossover: 'include',
   sortColumn: 'Kudos'
 });
 

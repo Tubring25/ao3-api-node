@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-import { Chapter, ChapterContent, RequestOptions, Work } from "../types/index.js";
+import { AO3Error, Chapter, ChapterContent, ChapterNotFoundError, RequestOptions, Work, WorkNotFoundError } from "../types/index.js";
 import { request } from './request.js';
 
 /**
@@ -11,42 +11,50 @@ import { request } from './request.js';
 async function getWork(workId: string, options?: RequestOptions): Promise<Work> {
   const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
 
-  const html = await request(url, options)
-  const $ = cheerio.load(html)
+  try {
+    const html = await request(url, options)
+    const $ = cheerio.load(html)
 
-  // Extract work details
-  const statsNode = $('dl.stats')
-  const chaptersText = statsNode.find('dd.chapters').text()
-  const [postedChapters, totalChapters] = chaptersText.split('/').map(s => s.trim())
+    // Extract work details
+    const statsNode = $('dl.stats')
+    const chaptersText = statsNode.find('dd.chapters').text()
+    const [postedChapters, totalChapters] = chaptersText.split('/').map(s => s.trim())
 
-  const workData: Work = {
-    id: workId,
-    title: $('h2.title.heading').text().trim(),
-    author: $('a[rel="author"]').text().trim(),
-    summary: $('.summary .userstuff').html() || '',
-    language: $('dd.language').text().trim(),
-    stats: {
-      published: statsNode.find('dd.published').text().trim(),
-      updated: statsNode.find('dd.updated').text().trim() || undefined,
-      words: parseInt(statsNode.find('dd.words').text().replace(/,/g, ''), 10) || 0,
-      chapters: {
-        posted: parseInt(postedChapters, 10) || 0,
-        total: totalChapters === '?' ? null : parseInt(totalChapters, 10)
+    const workData: Work = {
+      id: workId,
+      title: $('h2.title.heading').text().trim(),
+      author: $('a[rel="author"]').text().trim(),
+      summary: $('.summary .userstuff').html() || '',
+      language: $('dd.language').text().trim(),
+      stats: {
+        published: statsNode.find('dd.published').text().trim(),
+        updated: statsNode.find('dd.updated').text().trim() || undefined,
+        words: parseInt(statsNode.find('dd.words').text().replace(/,/g, ''), 10) || 0,
+        chapters: {
+          posted: parseInt(postedChapters, 10) || 0,
+          total: totalChapters === '?' ? null : parseInt(totalChapters, 10)
+        },
+        hits: parseInt(statsNode.find('dd.hits').text().replace(/,/g, ''), 10) || 0
       },
-      hits: parseInt(statsNode.find('dd.hits').text().replace(/,/g, ''), 10) || 0
-    },
-    tags: {
-      rating: $('dd.rating a.tag').text().trim().replace(/\s+/g, ' '),
-      warnings: $('dd.warning a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-      category: $('dd.category a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-      fandoms: $('dd.fandom a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-      relationships: $('dd.relationship a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-      characters: $('dd.character a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-      freeforms: $('dd.freeform a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get()
+      tags: {
+        rating: $('dd.rating a.tag').text().trim().replace(/\s+/g, ' '),
+        warnings: $('dd.warning a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+        category: $('dd.category a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+        fandoms: $('dd.fandom a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+        relationships: $('dd.relationship a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+        characters: $('dd.character a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+        freeforms: $('dd.freeform a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get()
+      }
     }
-  }
 
-  return workData
+    return workData
+  } catch (error) {
+    if (error instanceof AO3Error && error.statusCode === 404) {
+      throw new WorkNotFoundError(workId)
+    }
+
+    throw error
+  }
 }
 
 /**
@@ -56,22 +64,29 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
  */
 async function getChapters(workId: string, options?: RequestOptions): Promise<Chapter[]> {
   const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
+  try {
+    const html = await request(url, options)
+    const $ = cheerio.load(html)
 
-  const html = await request(url, options)
-  const $ = cheerio.load(html)
+    const chapterOptions = $('#chapter_index select option')
 
-  const chapterOptions = $('#chapter_index select option')
+    if (chapterOptions.length > 0) {
+      return chapterOptions.map((i, el) => ({
+        id: $(el).attr('value') || '',
+        title: $(el).text().replace(/^\d+\.\s*/, '').trim(),
+      })).get()
+    } else {
+      return [{
+        id: workId,
+        title: $('h2.title.heading').text().trim(),
+      }]
+    }
+  } catch (error) {
+    if (error instanceof AO3Error && error.statusCode === 404) {
+      throw new WorkNotFoundError(workId)
+    }
 
-  if (chapterOptions.length > 0) {
-    return chapterOptions.map((i, el) => ({
-      id: $(el).attr('value') || '',
-      title: $(el).text().replace(/^\d+\.\s*/, '').trim(),
-    })).get()
-  } else {
-    return [{
-      id: workId,
-      title: $('h2.title.heading').text().trim(),
-    }]
+    throw error
   }
 }
 
@@ -87,26 +102,33 @@ async function getChapterContent(
   options?: RequestOptions
 ): Promise<ChapterContent> {
   const url = `https://archiveofourown.org/works/${workId}/chapters/${chapterId}`
+  try {
+    const html = await request(url, options)
+    const $ = cheerio.load(html)
 
-  const html = await request(url, options)
-  const $ = cheerio.load(html)
+    const getUserstuffHtml = (selector: string): string | null => {
+      const el = $(selector).find('blockquote.userstuff')
+      return el.length > 0 ? el.html() : null
+    }
 
-  const getUserstuffHtml = (selector: string): string | null => {
-    const el = $(selector).find('blockquote.userstuff')
-    return el.length > 0 ? el.html() : null
+    const chapterData: ChapterContent = {
+      workId,
+      chapterId,
+      title: $('h3.title').text().trim(),
+      summary: getUserstuffHtml('#summary'),
+      notes: getUserstuffHtml('div#notes'),
+      content: $('div.userstuff[role="article"]').html() || '',
+      endNotes: getUserstuffHtml('div.end.notes')
+    }
+
+    return chapterData
+  } catch (error) {
+    if (error instanceof AO3Error && error.statusCode === 404) {
+      throw new ChapterNotFoundError(workId, chapterId)
+    }
+
+    throw error
   }
-
-  const chapterData: ChapterContent = {
-    workId,
-    chapterId,
-    title: $('h3.title').text().trim(),
-    summary: getUserstuffHtml('#summary'),
-    notes: getUserstuffHtml('div#notes'),
-    content: $('div.userstuff[role="article"]').html() || '',
-    endNotes: getUserstuffHtml('div.end.notes')
-  }
-
-  return chapterData
 }
 
 export { getWork, getChapters, getChapterContent }

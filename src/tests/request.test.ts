@@ -21,4 +21,21 @@ describe('request', () => {
       })
     }))
   })
+  it('send request with proxy, timeout and signal', async () => {
+    const controller = new AbortController()
+    await request('https://archiveofourown.org/works/123', {
+      proxyUrl: 'https://proxy.com',
+      timeoutMs: 5000,
+      signal: controller.signal
+    })
+    expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
+      retry: expect.objectContaining({
+        limit: 2,
+        statusCodes: expect.arrayContaining([525])
+      }),
+      proxyUrl: 'https://proxy.com',
+      timeout: { request: 5000 },
+      signal: controller.signal
+    }))
+  })
 })

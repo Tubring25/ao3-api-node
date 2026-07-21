@@ -74,15 +74,15 @@ afterEach(() => {
 describe('getUserBookmarks', () => {
   it('should return user bookmarks with correct structure', async () => {
     const result = await getUserBookmarks('testuser')
-    
+
     expect(result).toHaveProperty('bookmarks')
     expect(result).toHaveProperty('total')
     expect(result).toHaveProperty('page')
     expect(result).toHaveProperty('totalPages')
-    
+
     expect(result.bookmarks).toHaveLength(1)
     expect(result.total).toBe(1)
-    
+
     const bookmark = result.bookmarks[0]
     expect(bookmark.bookmark).toHaveProperty('id', '12345')
     expect(bookmark.bookmark).toHaveProperty('workId', '123456')
@@ -92,7 +92,7 @@ describe('getUserBookmarks', () => {
     expect(bookmark.bookmark).toHaveProperty('notes', 'This is a bookmark note.')
     expect(bookmark.bookmark).toHaveProperty('tags')
     expect(bookmark.bookmark.tags).toContain('Test Tag')
-    
+
     expect(bookmark.work).toHaveProperty('title', 'Test Work Title')
     expect(bookmark.work).toHaveProperty('author', 'testauthor')
     expect(bookmark.work).toHaveProperty('words', 1000)
@@ -101,7 +101,7 @@ describe('getUserBookmarks', () => {
 
   it('should handle pagination correctly', async () => {
     const result = await getUserBookmarks('testuser', 1)
-    
+
     expect(result.page).toBe(1)
     expect(result.totalPages).toBe(1)
   })
@@ -114,12 +114,12 @@ describe('getUserBookmarks', () => {
 describe('getWorkBookmarks', () => {
   it('should return work bookmarks with correct structure', async () => {
     const result = await getWorkBookmarks('123456')
-    
+
     expect(result).toHaveProperty('bookmarks')
     expect(result.bookmarks).toHaveLength(1)
     expect(result.total).toBe(687)
     expect(result.totalPages).toBe(35)
-    
+
     const bookmark = result.bookmarks[0]
     expect(bookmark.bookmark).toHaveProperty('id', null)
     expect(bookmark.bookmark).toHaveProperty('workId', '123456')
@@ -132,6 +132,21 @@ describe('getWorkBookmarks', () => {
 
   it('should throw error for non-existent work', async () => {
     await expect(getWorkBookmarks('999999')).rejects.toBeInstanceOf(WorkNotFoundError)
+  })
+
+  it('should send request with timeout and signal', async () => {
+    const controller = new AbortController()
+    const proxyUrl = 'http://localhost:8080'
+    const request = await getWorkBookmarks('123456', 1, {
+      proxyUrl,
+      timeoutMs: 5000,
+      signal: controller.signal,
+    })
+    expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
+      timeout: { request: 5000 },
+      signal: controller.signal,
+      proxyUrl,
+    }))
   })
 })
 

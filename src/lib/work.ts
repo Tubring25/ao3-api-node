@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-import { Chapter, ChapterContent, Work } from "../types/index.js";
+import { Chapter, ChapterContent, RequestOptions, Work } from "../types/index.js";
 import { request } from './request.js';
 
 /**
@@ -8,10 +8,10 @@ import { request } from './request.js';
  * @param workId - The ID of the work to get
  * @returns {Promise<Work>} The work details
  */
-async function getWork(workId: string, options?: { proxyUrl?: string }): Promise<Work> {
+async function getWork(workId: string, options?: RequestOptions): Promise<Work> {
   const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
 
-  const html = await request(url, options?.proxyUrl)
+  const html = await request(url, options)
   const $ = cheerio.load(html)
 
   // Extract work details
@@ -54,10 +54,10 @@ async function getWork(workId: string, options?: { proxyUrl?: string }): Promise
  * @param workId - The ID of the work
  * @returns A promise that resolves to an array of chapters
  */
-async function getChapters(workId: string, options?: { proxyUrl?: string }): Promise<Chapter[]> {
+async function getChapters(workId: string, options?: RequestOptions): Promise<Chapter[]> {
   const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
 
-  const html = await request(url, options?.proxyUrl)
+  const html = await request(url, options)
   const $ = cheerio.load(html)
 
   const chapterOptions = $('#chapter_index select option')
@@ -84,11 +84,11 @@ async function getChapters(workId: string, options?: { proxyUrl?: string }): Pro
 async function getChapterContent(
   workId: string,
   chapterId: string,
-  options?: { proxyUrl?: string }
+  options?: RequestOptions
 ): Promise<ChapterContent> {
   const url = `https://archiveofourown.org/works/${workId}/chapters/${chapterId}`
 
-  const html = await request(url, options?.proxyUrl)
+  const html = await request(url, options)
   const $ = cheerio.load(html)
 
   const getUserstuffHtml = (selector: string): string | null => {

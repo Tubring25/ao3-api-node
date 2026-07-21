@@ -1,4 +1,4 @@
-import { UserProfile } from "../types/index.js";
+import { RequestOptions, UserProfile } from "../types/index.js";
 import * as cheerio from 'cheerio';
 import { SearchResults } from "../types/index.js";
 import { parseWorkList } from "./parsers.js";
@@ -10,15 +10,15 @@ import { request } from "./request.js";
  * @param requestOptions Request options
  * @returns A promise that resolves to the user's profile
  */
-async function getUserProfile(username: string, requestOptions?: {proxyUrl?: string}): Promise<UserProfile>{
+async function getUserProfile(username: string, requestOptions?: RequestOptions): Promise<UserProfile>{
   const encodedUsername = encodeURIComponent(username)
   const url = `https://archiveofourown.org/users/${encodedUsername}/profile`
 
-  const html = await request(url, requestOptions?.proxyUrl)
+  const html = await request(url, requestOptions)
   const $ = cheerio.load(html)
 
   const meta = $('dl.meta')
-  
+
   const getMetaText = (label: string) => meta.find(`dt:contains("${label}")`).next('dd').text().trim()
   const bio = $('.bio.module .userstuff')
 
@@ -37,11 +37,11 @@ async function getUserProfile(username: string, requestOptions?: {proxyUrl?: str
  * @param requestOptions Request options
  * @returns A promise that resolves to a paginated list of works
  */
-async function getUserWorks(username: string, page: number = 1, requestOptions?: {proxyUrl?: string}): Promise<SearchResults> {
+async function getUserWorks(username: string, page: number = 1, requestOptions?: RequestOptions): Promise<SearchResults> {
   const encodedUsername = encodeURIComponent(username)
   const url = `https://archiveofourown.org/users/${encodedUsername}/works?page=${page}`
 
-  const html = await request(url, requestOptions?.proxyUrl)
+  const html = await request(url, requestOptions)
 
   return parseWorkList(html)
 }

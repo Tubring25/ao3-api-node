@@ -1,4 +1,4 @@
-import { SearchOptions, SearchResults, TagWorksOptions } from "../types/index.js";
+import { RequestOptions, SearchOptions, SearchResults, TagWorksOptions } from "../types/index.js";
 import { request } from "./request.js";
 import { parseWorkList } from "./parsers.js";
 import { categoryMap, ratingMap, sortColumnMap, warningMap, crossoverMap } from "./constants.js";
@@ -8,7 +8,7 @@ import { categoryMap, ratingMap, sortColumnMap, warningMap, crossoverMap } from 
  * @param options Search options
  * @returns A promise that resolves to a paginated list of works search results
  */
-async function search(options: SearchOptions, requestOptions?: {proxyUrl?: string}): Promise<SearchResults> {
+async function search(options: SearchOptions, requestOptions?: RequestOptions): Promise<SearchResults> {
   const params = new URLSearchParams()
 
   const addParam = (key: string, value: string | undefined) => value && params.set(key, value)
@@ -45,7 +45,7 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
 
   const url = `https://archiveofourown.org/works/search?commit=Search&${params.toString()}`
 
-  const html = await request(url, requestOptions?.proxyUrl)
+  const html = await request(url, requestOptions)
 
   return parseWorkList(html)
 }
@@ -58,7 +58,7 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
  * @param requestOptions Request options
  * @returns A promise that resolves to a paginated list of works
  */
-async function getTagWorks(tag: string, page: number = 1, options: TagWorksOptions = {}, requestOptions?: {proxyUrl?: string}): Promise<SearchResults> {
+async function getTagWorks(tag: string, page: number = 1, options: TagWorksOptions = {}, requestOptions?: RequestOptions): Promise<SearchResults> {
   const params = new URLSearchParams({
     page: String(page),
     tag_id: tag
@@ -85,7 +85,7 @@ async function getTagWorks(tag: string, page: number = 1, options: TagWorksOptio
 
   const url = `https://archiveofourown.org/works?${params.toString()}`
 
-  const html = await request(url, requestOptions?.proxyUrl)
+  const html = await request(url, requestOptions)
 
   return parseWorkList(html)
 }

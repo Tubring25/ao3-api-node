@@ -67,7 +67,7 @@ This is an unofficial API and is not affiliated with the Organization for Transf
 #### `getWork`
 Get the full meta data for a single work.
 
-**Signature:** `getWork(workId: string, options?: { proxyUrl?: string }): Promise<Work>`
+**Signature:** `getWork(workId: string, requestOptions?: RequestOptions): Promise<Work>`
 
 **Example:**
 ```typescript
@@ -79,7 +79,7 @@ console.log(work.tags.rating); // 'Teen And Up Audiences'
 #### `getChapters`
 Get the list of chapters info for a work. If the work has only one chapter, it returns a single row representing the work itself.
 
-**Signature:** `getChapters(workId: string, options?: { proxyUrl?: string }): Promise<Chapter[]>`
+**Signature:** `getChapters(workId: string, requestOptions?: RequestOptions): Promise<Chapter[]>`
 
 **Example:**
 ```typescript
@@ -91,7 +91,7 @@ console.log(chaptersList[0]) // { id: '89650822', title: 'Chapter 1' }
 #### `getChapterContent`
 Get the meta data and content for a single chapter.
 
-**Signature:** `getChapterContent(workId: string, chapterId: string, options?: { proxyUrl?: string }): Promise<ChapterContent>`
+**Signature:** `getChapterContent(workId: string, chapterId: string, requestOptions?: RequestOptions): Promise<ChapterContent>`
 
 **Example:**
 ```typescript
@@ -105,7 +105,7 @@ console.log(content.notes) // '<p>Probably not the sequel you were expecting, so
 #### `search`
 Accept the same query parameters as the AO3 website.
 
-**Signature:** `search(options: SearchOptions, requestOptions?: { proxyUrl?: string }): Promise<SearchResults>`
+**Signature:** `search(options: SearchOptions, requestOptions?: RequestOptions): Promise<SearchResults>`
 
 **Example:**
 ```typescript
@@ -128,7 +128,7 @@ console.log(`First result: ${results.works[0].title} by ${results.works[0].autho
 #### `getTagWorks`
 Get a paginated list of works for a specific tag.
 
-**Signature:** `getTagWorks(tag: string, page: number = 1, options?: TagWorksOptions, requestOptions?: { proxyUrl?: string }): Promise<SearchResults>`
+**Signature:** `getTagWorks(tag: string, page: number = 1, options?: TagWorksOptions, requestOptions?: RequestOptions): Promise<SearchResults>`
 
 **Example:**
 ```typescript
@@ -150,7 +150,7 @@ console.log(`Found ${results.totalResults} works across ${results.totalPages} pa
 #### `getSeries`
 Get details for a series, including the description, stats, and a list of containing works.
 
-**Signature:** `getSeries(seriesId: string, requestOptions?: { proxyUrl?: string }): Promise<Series>`
+**Signature:** `getSeries(seriesId: string, requestOptions?: RequestOptions): Promise<Series>`
 
 **Example:**
 ```typescript
@@ -167,7 +167,7 @@ console.log(`This series has ${series.stats.works} works.`); // This series has 
 #### `getUserProfile`
 Get the public profile info of a specific user.
 
-**Signature:** `getUserProfile(username: string, requestOptions?: { proxyUrl?: string }): Promise<UserProfile>`
+**Signature:** `getUserProfile(username: string, requestOptions?: RequestOptions): Promise<UserProfile>`
 
 **Example:**
 ```typescript
@@ -180,7 +180,7 @@ console.log(`${profile.username} joined on ${profile.joined}.`); // 2016-09-16
 #### `getUserWorks`
 Get a paginated list of works published by a user.
 
-**Signature:** `getUserWorks(username: string, page: number = 1, requestOptions?: { proxyUrl?: string }): Promise<SearchResults>`
+**Signature:** `getUserWorks(username: string, page: number = 1, requestOptions?: RequestOptions): Promise<SearchResults>`
 
 **Example:**
 ```typescript
@@ -195,7 +195,7 @@ console.log(`Found ${results.totalResults} works by TheHomelyBadger.`); // Found
 #### `getUserBookmarks`
 Get a paginated list of a user's public bookmarks.
 
-**Signature:** `getUserBookmarks(username: string, page: number = 1, proxyUrl?: string): Promise<BookmarkResults>`
+**Signature:** `getUserBookmarks(username: string, page: number = 1, requestOptions?: RequestOptions): Promise<BookmarkResults>`
 
 ```typescript
 import { getUserBookmarks } from 'ao3-api-nodejs'
@@ -207,19 +207,19 @@ console.log(results.bookmarks[0].bookmark.workTitle)
 #### `getWorkBookmarks`
 Get the public bookmarks for a work. `bookmark.id` is `null` when AO3 does not expose an ID.
 
-**Signature:** `getWorkBookmarks(workId: string, page: number = 1, proxyUrl?: string): Promise<BookmarkResults>`
+**Signature:** `getWorkBookmarks(workId: string, page: number = 1, requestOptions?: RequestOptions): Promise<BookmarkResults>`
 
 ### Comments
 
 #### `getWorkComments`
 Get paginated comments for a complete work, organized into reply threads.
 
-**Signature:** `getWorkComments(workId: string, page: number = 1, proxyUrl?: string): Promise<CommentResults>`
+**Signature:** `getWorkComments(workId: string, page: number = 1, requestOptions?: RequestOptions): Promise<CommentResults>`
 
 #### `getChapterComments`
 Get paginated comments for one chapter, organized into reply threads.
 
-**Signature:** `getChapterComments(workId: string, chapterId: string, page: number = 1, proxyUrl?: string): Promise<CommentResults>`
+**Signature:** `getChapterComments(workId: string, chapterId: string, page: number = 1, requestOptions?: RequestOptions): Promise<CommentResults>`
 
 ### Errors
 

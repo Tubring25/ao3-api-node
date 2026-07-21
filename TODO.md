@@ -10,7 +10,6 @@
 
 - Use resource-specific not-found errors consistently for works, users, series, bookmarks, and comments.
 - Add opt-in helpers for iterating all result pages without introducing aggressive concurrent requests.
-- Support request timeouts and cancellation with `AbortSignal` while preserving proxy support.
 
 ## Release readiness
 

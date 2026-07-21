@@ -50,22 +50,22 @@ describe('getWorkComments', () => {
     expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
       url: expect.stringContaining('view_full_work=true')
     }))
-    
+
     expect(result).toHaveProperty('comments')
     expect(result).toHaveProperty('total')
     expect(result).toHaveProperty('page')
     expect(result).toHaveProperty('totalPages')
-    
+
     expect(result.comments).toHaveLength(2)
     expect(result.total).toBe(3)
-    
+
     const firstComment = result.comments[0]
     expect(firstComment).toHaveProperty('id', '111')
     expect(firstComment).toHaveProperty('workId', '123456')
     expect(firstComment).toHaveProperty('author', 'commenter1')
     expect(firstComment.content).toContain('Great work!')
     expect(firstComment).toHaveProperty('replies')
-    
+
     const secondComment = result.comments[1]
     expect(secondComment).toHaveProperty('id', '222')
     expect(secondComment).toHaveProperty('author', 'commenter2')
@@ -76,19 +76,19 @@ describe('getWorkComments', () => {
 
   it('should handle comment threading correctly', async () => {
     const result = await getWorkComments('123456')
-    
+
     // The nested comment should be properly threaded
     const parentComment = result.comments.find(c => c.id === '222')
     expect(parentComment).toBeDefined()
-    
-    // Note: The actual threading depends on HTML structure, 
+
+    // Note: The actual threading depends on HTML structure,
     // this test verifies the function runs without error
     expect(result.comments).toHaveLength(2)
   })
 
   it('should handle pagination correctly', async () => {
     const result = await getWorkComments('123456', 1)
-    
+
     expect(result.page).toBe(1)
     expect(result.totalPages).toBe(3)
   })
@@ -101,11 +101,11 @@ describe('getWorkComments', () => {
 describe('getChapterComments', () => {
   it('should return chapter comments with correct structure', async () => {
     const result = await getChapterComments('123456', '789')
-    
+
     expect(result).toHaveProperty('comments')
     expect(result.comments).toHaveLength(1)
     expect(result.total).toBe(1)
-    
+
     const comment = result.comments[0]
     expect(comment).toHaveProperty('id', '444')
     expect(comment).toHaveProperty('workId', '123456')
@@ -117,5 +117,20 @@ describe('getChapterComments', () => {
 
   it('should throw error for non-existent chapter', async () => {
     await expect(getChapterComments('123456', '999999')).rejects.toBeInstanceOf(ChapterNotFoundError)
+  })
+  it('send request with timeout and signal', async () => {
+    const controller = new AbortController()
+    const proxyUrl = 'http://localhost:8080'
+    const result = await getChapterComments('123456', '789', 1, {
+      proxyUrl,
+      timeoutMs: 5000,
+      signal: controller.signal,
+    })
+
+    expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
+      proxyUrl,
+      timeout: { request: 5000 },
+      signal: controller.signal
+    }))
   })
 })

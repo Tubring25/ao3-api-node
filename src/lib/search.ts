@@ -1,14 +1,14 @@
-import { SearchOptions, SearchResults, TagWorksOptions } from "../types/index.js";
+import { RequestOptions, SearchOptions, SearchResults, TagWorksOptions } from "../types/index.js";
 import { request } from "./request.js";
 import { parseWorkList } from "./parsers.js";
-import { categoryMap, ratingMap, sortColumnMap, warningMap } from "./constants.js";
+import { categoryMap, ratingMap, sortColumnMap, warningMap, crossoverMap } from "./constants.js";
 
 /**
  * Searches for works based on a query and filters
  * @param options Search options
  * @returns A promise that resolves to a paginated list of works search results
  */
-async function search(options: SearchOptions, requestOptions?: {proxyUrl?: string}): Promise<SearchResults> {
+async function search(options: SearchOptions, requestOptions?: RequestOptions): Promise<SearchResults> {
   const params = new URLSearchParams()
 
   const addParam = (key: string, value: string | undefined) => value && params.set(key, value)
@@ -20,6 +20,7 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
   addParam('work_search[creators]', options.creators)
   addParam('work_search[revised_at]', options.revisedAt)
   if(options.complete !== undefined) params.set('work_search[complete]', options.complete ? 'T' : 'F')
+  if(options.crossover !== undefined) params.set('work_search[crossover]', crossoverMap[options.crossover])
   if(options.singleChapter) params.set('work_search[single_chapter]', '1')
   addParam('work_search[word_count]', options.wordCount)
   addParam('work_search[language_id]', options.language)
@@ -28,14 +29,13 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
   addParam('work_search[comments_count]', options.comments)
   addParam('work_search[bookmarks_count]', options.bookmarks)
 
-  // Array params
-  addArrayParam('work_search[fandom_names]', options.fandoms)
-  addArrayParam('work_search[character_names]', options.characters)
-  addArrayParam('work_search[relationship_names]', options.relationships)
-  addArrayParam('work_search[freeform_names]', options.freeforms)
+  addParam('work_search[fandom_names]', options.fandoms?.join(','))
+  addParam('work_search[character_names]', options.characters?.join(','))
+  addParam('work_search[relationship_names]', options.relationships?.join(','))
+  addParam('work_search[freeform_names]', options.freeforms?.join(','))
 
   // Mapped params
-  addArrayParam('work_search[rating_ids][]', options.ratings?.map(r => ratingMap[r]))
+  if(options.rating !== undefined) addParam('work_search[rating_ids]', ratingMap[options.rating])
   addArrayParam('work_search[archive_warning_ids][]', options.warnings?.map(w => warningMap[w]))
   addArrayParam('work_search[category_ids][]', options.categories?.map(c => categoryMap[c]))
 
@@ -45,7 +45,7 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
 
   const url = `https://archiveofourown.org/works/search?commit=Search&${params.toString()}`
 
-  const html = await request(url, requestOptions?.proxyUrl)
+  const html = await request(url, requestOptions)
 
   return parseWorkList(html)
 }
@@ -58,7 +58,7 @@ async function search(options: SearchOptions, requestOptions?: {proxyUrl?: strin
  * @param requestOptions Request options
  * @returns A promise that resolves to a paginated list of works
  */
-async function getTagWorks(tag: string, page: number = 1, options: TagWorksOptions = {}, requestOptions?: {proxyUrl?: string}): Promise<SearchResults> {
+async function getTagWorks(tag: string, page: number = 1, options: TagWorksOptions = {}, requestOptions?: RequestOptions): Promise<SearchResults> {
   const params = new URLSearchParams({
     page: String(page),
     tag_id: tag
@@ -85,7 +85,7 @@ async function getTagWorks(tag: string, page: number = 1, options: TagWorksOptio
 
   const url = `https://archiveofourown.org/works?${params.toString()}`
 
-  const html = await request(url, requestOptions?.proxyUrl)
+  const html = await request(url, requestOptions)
 
   return parseWorkList(html)
 }

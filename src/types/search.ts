@@ -3,7 +3,7 @@ import { Category, Rating, Warning, WorkSearchResult } from "./work.js";
 /**
  * Available sort columns for search results
  */
-export type SortColumn = 
+export type SortColumn =
   | 'Best Match'
   | 'Author'
   | 'Title'
@@ -21,6 +21,11 @@ export type SortColumn =
 export type SortDirection = 'asc' | 'desc'
 
 /**
+ * How crossover works are handled.
+ */
+export type CrossoverMode = 'include' | 'exclude' | 'only'
+
+/**
  * Comprehensive search options
  */
 export interface SearchOptions {
@@ -30,11 +35,12 @@ export interface SearchOptions {
   creators?: string;
   revisedAt?: string; // e.g., "< 2 weeks"
   complete?: boolean;
+  crossover?: CrossoverMode;
   singleChapter?: boolean;
   wordCount?: string;
   language?: string;
   fandoms?: string[];
-  ratings?: Rating[];
+  rating?: Rating;
   warnings?: Warning[];
   categories?: Category[];
   characters?: string[];

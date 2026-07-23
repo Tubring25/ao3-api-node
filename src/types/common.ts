@@ -3,6 +3,8 @@
  */
 export interface RequestOptions {
   proxyUrl?: string;
+  timeoutMs?: number;
+  signal?: AbortSignal;
 }
 
 /**

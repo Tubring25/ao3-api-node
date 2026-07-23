@@ -1,4 +1,4 @@
-import { Rating, Warning, Category, SortColumn } from "../types/index.js";
+import { Rating, Warning, Category, SortColumn, CrossoverMode } from "../types/index.js";
 
 export const ratingMap: Record<Rating, string> = {
   'Not Rated': '9',
@@ -7,7 +7,7 @@ export const ratingMap: Record<Rating, string> = {
   'Mature': '12',
   'Explicit': '13'
 };
-export const warningMap: Record<Warning, string> = { 
+export const warningMap: Record<Warning, string> = {
   'Creator Chose Not To Use Archive Warnings': '14',
   'No Archive Warnings Apply': '16',
   'Graphic Depictions Of Violence': '17',
@@ -35,4 +35,10 @@ export const sortColumnMap: Record<SortColumn, string> = {
   'Kudos': 'kudos_count',
   'Comments': 'comments_count',
   'Bookmarks': 'bookmarks_count'
+};
+
+export const crossoverMap: Record<CrossoverMode, string> = {
+  'include': '',
+  'exclude': 'F',
+  'only': 'T'
 };

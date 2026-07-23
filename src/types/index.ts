@@ -15,6 +15,7 @@ export type {
 export type {
   SortColumn,
   SortDirection,
+  CrossoverMode,
   SearchOptions,
   TagWorksOptions,
   SearchResults

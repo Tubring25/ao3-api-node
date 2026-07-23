@@ -8,3 +8,4 @@ export * from './lib/series.js';
 export * from './lib/users.js';
 export * from './lib/bookmarks.js';
 export * from './lib/comments.js';
+export * from './lib/pagination.js';

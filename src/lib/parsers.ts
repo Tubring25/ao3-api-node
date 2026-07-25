@@ -52,10 +52,26 @@ export function parseWorkBlurb(
     return parseInt(text, 10) || 0
   }
 
+  const authors = workElement.find('a[rel="author"]').map((i, authorEl) => $(authorEl).text().trim()).get()
+  const summary = workElement.find('blockquote.userstuff.summary').text().trim() || null
+  const [postedChapters, totalChapters] = workElement.find('dd.chapters').text().trim().split('/')
+  const parsedTotalChapters = parseInt(totalChapters, 10)
+
   return {
     id: workElement.attr('id')?.replace('work_', '') || '',
     title: workElement.find('h4.heading a').first().text(),
-    author: workElement.find('a[rel="author"]').text(),
+    authors: authors,
+    author: authors[0] ?? '',
+    summary,
+    date: workElement.find('p.datetime').text().trim(),
+    language: workElement.find('dd.language').text().trim(),
+    chapters: {
+      posted: parseInt(postedChapters, 10) || 0,
+      total: Number.isNaN(parsedTotalChapters) ? null : parsedTotalChapters,
+    },
+    comments: parseStat('comments'),
+    bookmarks: parseStat('bookmarks'),
+    complete: workElement.find('.required-tags .complete-yes').length > 0,
     fandoms: workElement.find('h5.fandoms a').map((i, fandomEl) => $(fandomEl).text()).get(),
     words: parseStat('words'),
     kudos: parseStat('kudos'),
@@ -78,11 +94,11 @@ export function parseBookmarkList(html: string): BookmarkResults {
 
   const { page, totalPages } = parsePagination($)
 
-  return { 
-    bookmarks, 
-    total, 
+  return {
+    bookmarks,
+    total,
     page,
-    totalPages 
+    totalPages
   }
 }
 
@@ -134,24 +150,24 @@ function parseBookmarkBlurb(
   $: cheerio.CheerioAPI
 ): BookmarkSearchResult {
   const bookmarkElement = $(element)
-  
+
   const bookmarkId = bookmarkElement.attr('id')?.replace('bookmark_', '') || null
   const workLink = bookmarkElement.find('h4.heading a').first()
   const workId = workLink.attr('href')?.match(/\/works\/(\d+)/)?.[1] || ''
   const work = parseBookmarkWork(element, $)
-  
+
   const userLink = bookmarkElement.find('.user a')
   const username = userLink.text().trim()
   const userId = userLink.attr('href')?.replace('/users/', '') || ''
-  
+
   const created = bookmarkElement.find('.datetime').text().trim()
   const notes = bookmarkElement.find('.notes blockquote').text().trim() || null
-  
+
   const tags = bookmarkElement.find('.tag')
     .map((i, tagEl) => $(tagEl).text().trim())
     .get()
     .filter(tag => tag.length > 0)
-  
+
   const isPublic = !bookmarkElement.find('.private').length
   const isRec = !!bookmarkElement.find('.rec').length
 
@@ -233,11 +249,11 @@ export function parseCommentList(html: string): CommentResults {
 
   const { page, totalPages } = parsePagination($)
 
-  return { 
-    comments: buildCommentThreads(comments), 
-    total, 
+  return {
+    comments: buildCommentThreads(comments),
+    total,
     page,
-    totalPages 
+    totalPages
   }
 }
 
@@ -247,9 +263,9 @@ function parseComment(
   $: cheerio.CheerioAPI
 ): Comment {
   const commentElement = $(element)
-  
+
   const id = commentElement.attr('id')?.replace('comment_', '') || ''
-  
+
   // Try to extract workId from various sources in the comment
   let workId = ''
   const workLink = commentElement.find('a[href*="/works/"]').first()
@@ -257,21 +273,21 @@ function parseComment(
     const workMatch = workLink.attr('href')?.match(/\/works\/(\d+)/)
     workId = workMatch?.[1] || ''
   }
-  
+
   const chapterMatch = commentElement.find('a[href*="/chapters/"]').attr('href')?.match(/\/chapters\/(\d+)/)
   const chapterId = chapterMatch?.[1] || undefined
-  
+
   const authorElement = commentElement.find('.byline a').first()
   const author = authorElement.text().trim()
   const authorId = authorElement.attr('href')?.replace('/users/', '') || undefined
   const isAuthorGuest = authorElement.hasClass('guest')
-  
+
   const directContent = commentElement.children('.userstuff').first()
   const legacyContent = commentElement.children('.comment').first().find('.userstuff').first()
   const content = (directContent.length ? directContent : legacyContent).html() || ''
   const posted = commentElement.find('.datetime').text().trim()
   const edited = commentElement.find('.edited').text().trim() || undefined
-  
+
   const actionLinks = commentElement.find('ul.actions a')
   const actionCommentId = (label: string): string | undefined => {
     const href = actionLinks
@@ -288,7 +304,7 @@ function parseComment(
   const threadId = actionCommentId('Parent Thread')
     || threadElement.attr('id')?.replace('thread_', '')
     || id
-  
+
   const kudosText = commentElement.find('.kudos').text()
   const kudosMatch = kudosText.match(/(\d+)/)
   const kudos = kudosMatch ? parseInt(kudosMatch[1], 10) : 0
@@ -314,16 +330,16 @@ function parseComment(
 function buildCommentThreads(comments: Comment[]): Comment[] {
   const commentMap = new Map<string, Comment>()
   const rootComments: Comment[] = []
-  
+
   // First pass: create map of all comments
   comments.forEach(comment => {
     commentMap.set(comment.id, { ...comment, replies: [] })
   })
-  
+
   // Second pass: build the tree structure
   comments.forEach(comment => {
     const commentCopy = commentMap.get(comment.id)!
-    
+
     if (comment.parentId && commentMap.has(comment.parentId)) {
       const parent = commentMap.get(comment.parentId)!
       parent.replies.push(commentCopy)
@@ -337,7 +353,7 @@ function buildCommentThreads(comments: Comment[]): Comment[] {
     comment.replies.forEach(reply => setDepth(reply, depth + 1))
   }
   rootComments.forEach(comment => setDepth(comment, 0))
-  
+
   return rootComments
 }
 

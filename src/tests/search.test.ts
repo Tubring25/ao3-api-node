@@ -67,11 +67,53 @@ describe('search', () => {
     expect(results.totalPages).toBe(2)
 
     const firstWork = results.works[0]
-    expect(firstWork.id).toBe('35473240')
-    expect(firstWork.title).toBe('Kiss me, cupcake')
-    expect(firstWork.author).toBe('Eowima')
+    expect(firstWork).toEqual(expect.objectContaining({
+      id: '35473240',
+      title: 'Kiss me, cupcake',
+      authors: ['Eowima'],
+      author: 'Eowima',
+      summary: expect.stringContaining('Looking hot, cupcake'),
+      date: '02 Dec 2021',
+      language: 'English',
+      chapters: {
+        posted: 1,
+        total: 1,
+      },
+      comments: 104,
+      bookmarks: 264,
+      complete: true,
+      kudos: 3409,
+    }))
     expect(firstWork.fandoms).toContain('Arcane: League of Legends (Cartoon 2021)')
-    expect(firstWork.kudos).toBe(3409)
+  })
+
+  it('should parse multiple authors and work-in-progress metadata', async () => {
+    const results = await search({ query: 'Kiss me, Cupcake' })
+    const work = results.works.find(({ id }) => id === '61826785')
+
+    expect(work).toEqual(expect.objectContaining({
+      author: 'doieXisTorNoE',
+      authors: ['doieXisTorNoE', 'V01DL_0N_P4WZ'],
+      date: '03 Jan 2025',
+      language: 'English',
+      chapters: {
+        posted: 2,
+        total: 50,
+      },
+      comments: 6,
+      bookmarks: 7,
+      complete: false,
+    }))
+  })
+
+  it('should use null for an unknown chapter total', async () => {
+    const results = await search({ query: 'Kiss me, Cupcake' })
+    const work = results.works.find(({ id }) => id === '61748254')
+
+    expect(work?.chapters).toEqual({
+      posted: 1,
+      total: null,
+    })
   })
 
   it('should build a URL with all parameters', async () => {

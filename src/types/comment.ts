@@ -21,3 +21,9 @@ export interface CommentResults {
   page: number;
   totalPages: number;
 }
+
+export interface AllCommentResults {
+  comments: Comment[]
+  total: number
+  totalPages: number
+}

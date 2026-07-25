@@ -6,8 +6,11 @@ import {
   ChapterNotFoundError,
   Comment,
   CommentResults,
-  WorkNotFoundError
+  WorkNotFoundError,
+  AllCommentResults,
 } from '../types/index.js'
+import { iteratePages } from './pagination.js'
+import { mergeCommentThreads } from './commentThreads.js'
 
 /**
  * Get comments for a specific work with threading support
@@ -87,5 +90,25 @@ export async function getChapterComments(
       throw new ChapterNotFoundError(workId, chapterId)
     }
     throw error
+  }
+}
+
+export async function getAllWorkComments(workId: string, requestOptions?: RequestOptions): Promise<AllCommentResults> {
+  const pages: Comment[][] = []
+  let total = 1
+  let totalPages = 1
+
+  for await (const result of iteratePages(
+    page => getWorkComments(workId, page, requestOptions)
+  )) {
+    pages.push(result.comments)
+    total = result.total
+    totalPages = result.totalPages
+  }
+
+  return {
+    comments: mergeCommentThreads(pages),
+    total,
+    totalPages
   }
 }

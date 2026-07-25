@@ -42,7 +42,8 @@ export type {
 // Comment-related types
 export type {
   Comment,
-  CommentResults
+  CommentResults,
+  AllCommentResults
 } from './comment.js'
 
 // Common types and utilities

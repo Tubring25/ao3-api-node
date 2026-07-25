@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import { SearchResults, WorkSearchResult, BookmarkResults, BookmarkSearchResult, CommentResults, Comment } from '../types/index.js';
-
+import { buildCommentThreads } from './commentThreads.js'
 
 /**
  * Parses the HTML of a work listing page (search, tags)
@@ -325,36 +325,6 @@ function parseComment(
     kudos,
     replies: []
   }
-}
-
-function buildCommentThreads(comments: Comment[]): Comment[] {
-  const commentMap = new Map<string, Comment>()
-  const rootComments: Comment[] = []
-
-  // First pass: create map of all comments
-  comments.forEach(comment => {
-    commentMap.set(comment.id, { ...comment, replies: [] })
-  })
-
-  // Second pass: build the tree structure
-  comments.forEach(comment => {
-    const commentCopy = commentMap.get(comment.id)!
-
-    if (comment.parentId && commentMap.has(comment.parentId)) {
-      const parent = commentMap.get(comment.parentId)!
-      parent.replies.push(commentCopy)
-    } else {
-      rootComments.push(commentCopy)
-    }
-  })
-
-  const setDepth = (comment: Comment, depth: number) => {
-    comment.depth = depth
-    comment.replies.forEach(reply => setDepth(reply, depth + 1))
-  }
-  rootComments.forEach(comment => setDepth(comment, 0))
-
-  return rootComments
 }
 
 function parseTotal(headingText: string): number {

@@ -11,7 +11,7 @@ export type Rating =
 /**
  * AO3 content warnings
  */
-export type Warning = 
+export type Warning =
   | 'Creator Chose Not To Use Archive Warnings'
   | 'Graphic Depictions Of Violence'
   | 'Major Character Death'
@@ -78,6 +78,17 @@ export interface WorkSearchResult {
   id: string;
   title: string;
   author: string;
+  authors: string[];
+  summary: string | null;
+  date: string;
+  language: string;
+  chapters: {
+    posted: number,
+    total: number | null;
+  }
+  comments: number;
+  bookmarks: number;
+  complete: boolean;
   fandoms: string[];
   words: number;
   kudos: number;

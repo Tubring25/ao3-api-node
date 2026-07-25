@@ -1,13 +1,45 @@
 import { describe, vi, expect, afterEach, it } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { getWorkComments, getChapterComments } from "../index.js";
+import { getWorkComments, getChapterComments, getAllWorkComments } from "../index.js";
 import { gotScraping } from "got-scraping";
 import { ChapterNotFoundError, WorkNotFoundError } from "../types/index.js";
 
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string, proxyUrl?: string}) => {
-    if(options.url.includes('/works/123456?show_comments=true')) {
+    if(options.url.includes('/works/654321?show_comments=true')) {
+      const page = new URL(options.url).searchParams.get('page') || '1'
+      const isSecondPage = page === '2'
+      const commentId = isSecondPage ? '200' : '100'
+      const parentLink = isSecondPage
+        ? '<ul class="actions"><li><a href="/comments/100">Parent</a></li></ul>'
+        : ''
+      const mockHtml = `
+        <html>
+          <body>
+            <a href="/comments/hide_comments">Hide Comments (2)</a>
+            <ol class="pagination actions">
+              <li><span class="current">${page}</span></li>
+              <li><a href="?page=2">2</a></li>
+            </ol>
+            <li class="thread" id="thread_100">
+              <ol>
+                <li class="comment" id="comment_${commentId}">
+                  <h4 class="byline">
+                    <a href="/users/commenter-${commentId}">commenter-${commentId}</a>
+                  </h4>
+                  <blockquote class="userstuff">Comment ${commentId}</blockquote>
+                  <p class="datetime">01 Jan 2026</p>
+                  ${parentLink}
+                </li>
+              </ol>
+            </li>
+          </body>
+        </html>
+      `
+      return { statusCode: 200, body: mockHtml }
+    }
+    else if(options.url.includes('/works/123456?show_comments=true')) {
       const mockHtmlPath = path.join(__dirname, '../fixtures', 'comments-current.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return { statusCode: 200, body: mockHtml }
@@ -132,5 +164,26 @@ describe('getChapterComments', () => {
       timeout: { request: 5000 },
       signal: controller.signal
     }))
+  })
+})
+
+describe('getAllWorkComments', () => {
+  it('should get all comments in multiple pages', async () => {
+    const result = await getAllWorkComments('654321')
+
+    expect(result.total).toBe(2)
+    expect(result.totalPages).toBe(2)
+    expect(result.comments).toHaveLength(1)
+    expect(result.comments[0].id).toBe('100')
+    expect(result.comments[0].workId).toBe('654321')
+    expect(result.comments[0].replies[0].id).toBe('200')
+    expect(result.comments[0].replies[0].workId).toBe('654321')
+    expect(result.comments[0].replies[0].depth).toBe(1)
+    expect(gotScraping).toHaveBeenCalledTimes(2)
+
+    const requestedPages = vi.mocked(gotScraping).mock.calls.map(([options]) => {
+      return new URL((options as { url: string }).url).searchParams.get('page')
+    })
+    expect(requestedPages).toEqual(['1', '2'])
   })
 })

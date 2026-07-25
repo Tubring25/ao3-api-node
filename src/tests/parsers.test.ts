@@ -108,7 +108,18 @@ describe('parseWorkBlurb', () => {
     
     expect(result.id).toBe('789')
     expect(result.title).toBe('Work Without Stats')
+    expect(result.authors).toEqual(['No Stat Author'])
     expect(result.author).toBe('No Stat Author')
+    expect(result.summary).toBeNull()
+    expect(result.date).toBe('')
+    expect(result.language).toBe('')
+    expect(result.chapters).toEqual({
+      posted: 0,
+      total: null,
+    })
+    expect(result.comments).toBe(0)
+    expect(result.bookmarks).toBe(0)
+    expect(result.complete).toBe(false)
     expect(result.words).toBe(0)
     expect(result.kudos).toBe(0)
     expect(result.hits).toBe(0)

@@ -47,6 +47,7 @@ describe('getWork', () => {
     expect(work.title).not.toBe('')
     expect(typeof work.author).toBe('string')
     expect(work.author).not.toBe('')
+    expect(work.stats.updated).toBe('2021-12-27')
     expect(Array.isArray(work.tags.fandoms)).toBe(true)
   })
 

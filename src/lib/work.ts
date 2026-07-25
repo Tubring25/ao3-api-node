@@ -28,7 +28,7 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
       language: $('dd.language').text().trim(),
       stats: {
         published: statsNode.find('dd.published').text().trim(),
-        updated: statsNode.find('dd.updated').text().trim() || undefined,
+        updated: statsNode.find('dd.status').text().trim() || undefined,
         words: parseInt(statsNode.find('dd.words').text().replace(/,/g, ''), 10) || 0,
         chapters: {
           posted: parseInt(postedChapters, 10) || 0,

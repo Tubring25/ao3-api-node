@@ -11,8 +11,8 @@ vi.mock('got-scraping', () => {
 
       const workId = options.url.split('/works/')[1].split('?')[0]
 
-      if (workId === '35961484') {
-        const mockHtmlPath = path.join(__dirname, '../fixtures', 'work-35961484.html')
+      if (workId === '35961484' || workId === '66534724') {
+        const mockHtmlPath = path.join(__dirname, '../fixtures', `work-${workId}.html`)
         const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
 
         return Promise.resolve({
@@ -61,11 +61,10 @@ afterEach(() => {
 
 describe('getWork', () => {
 
-  it.concurrent('should return work details for a valid work ID', async () => {
+  it('should return work details for a valid work ID', async () => {
     const workId = '35961484'
 
     const work: Work = await getWork(workId)
-    console.log(work)
 
     expect(work).toBeDefined()
     expect(work.id).toBe(workId)
@@ -75,9 +74,21 @@ describe('getWork', () => {
     expect(work.author).not.toBe('')
     expect(work.stats.updated).toBe('2021-12-27')
     expect(Array.isArray(work.tags.fandoms)).toBe(true)
+
+    const workId2 = '66534724'
+    const work2: Work = await getWork(workId2)
+
+    expect(work.stats.comments).toBe(155)
+    expect(work2.stats.comments).toBe(0)
+
+    expect(work.stats.kudos).toBe(4916)
+    expect(work2.stats.kudos).toBe(32)
+
+    expect(work.stats.bookmarks).toBe(654)
+    expect(work2.stats.bookmarks).toBe(3)
   })
 
-  it.concurrent('should throw an error for an invalid workID using mock', async() => {
+  it('should throw an error for an invalid workID using mock', async() => {
     const invalidWorkId = '000000'
 
     await expect(getWork(invalidWorkId)).rejects.toThrow(

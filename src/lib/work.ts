@@ -44,7 +44,10 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
           posted: parseInt(postedChapters, 10) || 0,
           total: totalChapters === '?' ? null : parseInt(totalChapters, 10)
         },
-        hits: parseInt(statsNode.find('dd.hits').text().replace(/,/g, ''), 10) || 0
+        hits: parseInt(statsNode.find('dd.hits').text().replace(/,/g, ''), 10) || 0,
+        comments: parseInt(statsNode.find('dd.comments').text().replace(/,/g, ''), 10) || 0,
+        bookmarks: parseInt(statsNode.find('dd.bookmarks').text().replace(/,/g, ''), 10) || 0,
+        kudos: parseInt(statsNode.find('dd.kudos').text().replace(/,/g, ''), 10) || 0,
       },
       tags: {
         rating: $('dd.rating a.tag').text().trim().replace(/\s+/g, ' '),

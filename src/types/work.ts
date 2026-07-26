@@ -43,6 +43,9 @@ export interface WorkStats {
     total: number | null; // when the total is '?'
   };
   hits: number;
+  comments: number;
+  bookmarks: number;
+  kudos: number;
 }
 
 /**

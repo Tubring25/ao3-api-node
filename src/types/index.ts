@@ -54,4 +54,5 @@ export {
   ChapterNotFoundError,
   UserNotFoundError,
   SeriesNotFoundError,
+  AuthenticationRequiredError
 } from './common.js'

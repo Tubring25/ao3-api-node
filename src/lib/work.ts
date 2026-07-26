@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-import { AO3Error, Chapter, ChapterContent, ChapterNotFoundError, RequestOptions, Work, WorkNotFoundError } from "../types/index.js";
+import { AO3Error, AuthenticationRequiredError, Chapter, ChapterContent, ChapterNotFoundError, RequestOptions, Work, WorkNotFoundError } from "../types/index.js";
 import { request } from './request.js';
 
 /**
@@ -14,6 +14,16 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
   try {
     const html = await request(url, options)
     const $ = cheerio.load(html)
+
+    // check if login limited
+    if ($('#loginform form#new_user').length > 0) {
+      throw new AuthenticationRequiredError(workId)
+    }
+
+    // check if the work exists
+    if (!$('h2.title.heading').length) {
+      throw new AO3Error(`Invalid work page for work ID: ${workId}`)
+    }
 
     // Extract work details
     const statsNode = $('dl.stats')
@@ -68,6 +78,16 @@ async function getChapters(workId: string, options?: RequestOptions): Promise<Ch
     const html = await request(url, options)
     const $ = cheerio.load(html)
 
+    // check if login limited
+    if ($('#loginform form#new_user').length > 0) {
+      throw new AuthenticationRequiredError(workId)
+    }
+
+    // check if the work exists
+    if (!$('h2.title.heading').length) {
+      throw new AO3Error(`Invalid work page for work ID: ${workId}`)
+    }
+
     const chapterOptions = $('#chapter_index select option')
 
     if (chapterOptions.length > 0) {
@@ -101,10 +121,22 @@ async function getChapterContent(
   chapterId: string,
   options?: RequestOptions
 ): Promise<ChapterContent> {
-  const url = `https://archiveofourown.org/works/${workId}/chapters/${chapterId}`
+  const url = `https://archiveofourown.org/works/${workId}/chapters/${chapterId}?view_adult=true`
   try {
     const html = await request(url, options)
     const $ = cheerio.load(html)
+
+    // check authentation limited
+    if ($('#loginform form#new_user').length > 0) {
+      throw new AuthenticationRequiredError(workId)
+    }
+
+    // check content not found
+    if (!$('div.userstuff[role="article"]').length) {
+      throw new AO3Error(
+        `Invalid chapter page for chapter ID: ${chapterId}`
+      )
+    }
 
     const getUserstuffHtml = (selector: string): string | null => {
       const el = $(selector).find('blockquote.userstuff')

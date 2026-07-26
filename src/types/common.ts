@@ -60,3 +60,13 @@ export class SeriesNotFoundError extends AO3Error {
     this.name = 'SeriesNotFoundError'
   }
 }
+
+/**
+ * Error thrown when login limiation
+ */
+export class AuthenticationRequiredError extends AO3Error {
+  constructor(workId: string) {
+    super(`Authentication required for work ${workId}`)
+    this.name = 'AuthenticationRequiredError'
+  }
+}

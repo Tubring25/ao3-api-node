@@ -28,11 +28,12 @@ Inspired by [ao3_api](https://github.com/wendytg/ao3_api).
   - [Comments](#comments)
     - [`getWorkComments`](#getworkcomments)
     - [`getChapterComments`](#getchaptercomments)
+    - [`getAllWorkComments`](#getallworkcomments)
   - [Errors](#errors)
 - [License](#license)
 
 ## Installation
-
+Node.js 20 or later is required.
 ```bash
 npm i ao3-api-nodejs
 ```
@@ -59,6 +60,8 @@ import { getWork } from 'ao3-api-nodejs';
 ## A Note on AO3's Terms of Service
 
 This is an unofficial API and is not affiliated with the Organization for Transformative Works. Please respect the AO3's [Terms of Service](https://archiveofourown.org/tos). To avoid being IP-banned, please do not make an excessive number of requests. It is recommended to introduce a delay between requests.
+
+The package only fetches publicly available data. Not support authentication, cookie, or authentication-restricted works. Requests for restricted works throw `AuthenticationRequiredError`.
 
 ## API Reference
 ### Works
@@ -220,6 +223,13 @@ Get paginated comments for a complete work, organized into reply threads.
 Get paginated comments for one chapter, organized into reply threads.
 
 **Signature:** `getChapterComments(workId: string, chapterId: string, page: number = 1, requestOptions?: RequestOptions): Promise<CommentResults>`
+
+#### `getAllWorkComments`
+Get all comments for a work.
+**Caution:**  This method fetches every comments page sequentially. Avoid calling it frequently for works with many comments.
+
+**Signature:** `getAllWorkComments(workId: string, requestOptions?: RequestOptions): Promise<AllCommentResults>`
+
 
 ### Errors
 

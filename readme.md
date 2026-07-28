@@ -61,7 +61,7 @@ import { getWork } from 'ao3-api-nodejs';
 
 This is an unofficial API and is not affiliated with the Organization for Transformative Works. Please respect the AO3's [Terms of Service](https://archiveofourown.org/tos). To avoid being IP-banned, please do not make an excessive number of requests. It is recommended to introduce a delay between requests.
 
-The package only fetches publicly available data. Not support authentication, cookie, or authentication-restricted works. Requests for restricted works throw `AuthenticationRequiredError`.
+The package only fetches publicly available data. It does not support authentication, cookies, or authentication-restricted works. Requests for restricted works throw `AuthenticationRequiredError`.
 
 ## API Reference
 ### Works

@@ -8,7 +8,9 @@ export type {
   Work,
   WorkSearchResult,
   Chapter,
-  ChapterContent
+  ChapterContent,
+  WorkDownloadFormat,
+  WorkDownloadLink
 } from './work.js'
 
 // Search-related types

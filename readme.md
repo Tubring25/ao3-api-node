@@ -14,6 +14,7 @@ Inspired by [ao3_api](https://github.com/wendytg/ao3_api).
     - [`getWork`](#getwork)
     - [`getChapters`](#getchapters)
     - [`getChapterContent`](#getchaptercontent)
+    - [`getWorkDownloadLinks`](#getworkdownloadlinks)
   - [Searching](#searching)
     - [`search`](#search)
     - [`getTagWorks`](#gettagworks)
@@ -101,6 +102,18 @@ Get the meta data and content for a single chapter.
 import { getChapterContent } from 'ao3-api-nodejs'
 const content = await getChapterContent(workId, chapterId)
 console.log(content.notes) // '<p>Probably not the sequel you were expecting, sorry :)</p>'
+```
+
+#### `getWorkDownloadLinks`
+Get the available download links for a work. URLs are absolute and include AO3's `updated_at` query parameter.
+
+**Signature:** `getWorkDownloadLinks(workId: string, requestOptions?: RequestOptions): Promise<WorkDownloadLink[]>`
+
+**Example:**
+```typescript
+import { getWorkDownloadLinks } from 'ao3-api-nodejs'
+const links = await getWorkDownloadLinks(workId)
+console.log(links[0]) // { format: 'AZW3', url: 'https://archiveofourown.org/downloads/...' }
 ```
 
 ### Searching

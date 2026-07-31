@@ -118,3 +118,18 @@ export interface ChapterContent {
   content: string;
   endNotes: string | null;
 }
+
+/**
+ * Download Format
+ */
+export type WorkDownloadFormat =
+  | 'AZW3'
+  | 'EPUB'
+  | 'MOBI'
+  | 'PDF'
+  | 'HTML'
+
+export interface WorkDownloadLink {
+  format: WorkDownloadFormat;
+  url: string
+}

@@ -25,12 +25,19 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
       throw new AO3Error(`Invalid work page for work ID: ${workId}`)
     }
 
-    // Extract work details
+    // extract work details
     const statsNode = $('dl.stats')
     const chaptersText = statsNode.find('dd.chapters').text()
     const [postedChapters, totalChapters] = chaptersText.split('/').map(s => s.trim())
 
     const authors = $('a[rel="author"]').map((_, el) => $(el).text().trim()).get()
+    // anonymous author
+    if (authors.length === 0) {
+      const anonymousAuthor = $(
+          '#workskin > .preface.group > h3.byline.heading'
+        ).first().text().trim()
+      anonymousAuthor && authors.push(anonymousAuthor)
+    }
 
     const workData: Work = {
       id: workId,

@@ -7,7 +7,6 @@ import { gotScraping } from 'got-scraping';
 vi.mock('got-scraping', () => {
   return {
     gotScraping: vi.fn().mockImplementation(async (options: { url: string }) => {
-      console.log(`[Mock] Intercepted request to: ${options.url}`)
 
       const workId = options.url.split('/works/')[1].split('?')[0]
 
@@ -44,6 +43,21 @@ vi.mock('got-scraping', () => {
             </html>
           `
         })
+      } else if (workId === '333333') {
+        return Promise.resolve({
+          statusCode: 200,
+          body: `
+            <html>
+              <body>
+                <main id="main">
+                  <h2 class="title heading">Work Title</h2>
+                  <a rel="author">FirstAuthor</a>
+                  <a rel="author">SecondAuthor</a>
+                </main>
+              </body>
+            </html>
+          `
+        })
       }
       else {
         return Promise.resolve({
@@ -71,7 +85,9 @@ describe('getWork', () => {
     expect(typeof work.title).toBe('string')
     expect(work.title).not.toBe('')
     expect(typeof work.author).toBe('string')
-    expect(work.author).not.toBe('')
+    expect(work.author).toBe('AmberZ10')
+    expect(work.authors).toEqual(['AmberZ10'])
+
     expect(work.stats.updated).toBe('2021-12-27')
     expect(Array.isArray(work.tags.fandoms)).toBe(true)
 
@@ -119,5 +135,11 @@ describe('getWork', () => {
 
   it('should reject an authentication required error', async () => {
     await expect(getChapters('222222')).rejects.toBeInstanceOf(AuthenticationRequiredError)
+  })
+  it('should receive multiple authors', async () => {
+    const work: Work = await getWork('333333')
+
+    expect(work.authors).toEqual(['FirstAuthor', 'SecondAuthor'])
+    expect(work.author).toBe('FirstAuthor')
   })
 })

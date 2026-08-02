@@ -28,8 +28,6 @@ describe('getUserProfile', () => {
   it('should return the profile details for a valid user', async () => {
     const profile = await getUserProfile('TheHomelyBadger')
 
-    console.log(profile)
-
     expect(profile).toBeDefined()
     expect(profile.username).toBe('TheHomelyBadger')
     expect(profile.userId).toBe('2457241')

@@ -30,10 +30,13 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
     const chaptersText = statsNode.find('dd.chapters').text()
     const [postedChapters, totalChapters] = chaptersText.split('/').map(s => s.trim())
 
+    const authors = $('a[rel="author"]').map((_, el) => $(el).text().trim()).get()
+
     const workData: Work = {
       id: workId,
       title: $('h2.title.heading').text().trim(),
-      author: $('a[rel="author"]').text().trim(),
+      author: authors[0] ?? '',
+      authors: authors,
       summary: $('.summary .userstuff').html() || '',
       language: $('dd.language').text().trim(),
       stats: {

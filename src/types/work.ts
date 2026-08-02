@@ -68,6 +68,7 @@ export interface Work {
   id: string;
   title: string;
   author: string;
+  authors: string[];
   summary: string; // HTML string
   language: string;
   stats: WorkStats;

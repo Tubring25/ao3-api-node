@@ -59,8 +59,6 @@ describe('getChapterContent', () => {
 
     const chapterContent = await getChapterContent(workId, chapterId)
 
-    console.log(chapterContent)
-
     expect(chapterContent).toBeDefined()
     expect(chapterContent.workId).toBe(workId)
     expect(chapterContent.chapterId).toBe(chapterId)

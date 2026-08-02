@@ -68,6 +68,7 @@ export interface Work {
   id: string;
   title: string;
   author: string;
+  authors: string[];
   summary: string; // HTML string
   language: string;
   stats: WorkStats;
@@ -117,4 +118,19 @@ export interface ChapterContent {
   notes: string | null;
   content: string;
   endNotes: string | null;
+}
+
+/**
+ * Download Format
+ */
+export type WorkDownloadFormat =
+  | 'AZW3'
+  | 'EPUB'
+  | 'MOBI'
+  | 'PDF'
+  | 'HTML'
+
+export interface WorkDownloadLink {
+  format: WorkDownloadFormat;
+  url: string
 }

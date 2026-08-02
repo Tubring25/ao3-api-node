@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-import { AO3Error, AuthenticationRequiredError, Chapter, ChapterContent, ChapterNotFoundError, RequestOptions, Work, WorkNotFoundError } from "../types/index.js";
+import { AO3Error, AuthenticationRequiredError, Chapter, ChapterContent, ChapterNotFoundError, RequestOptions, Work, WorkNotFoundError, WorkDownloadLink } from "../types/index.js";
 import { request } from './request.js';
 
 /**
@@ -30,10 +30,13 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
     const chaptersText = statsNode.find('dd.chapters').text()
     const [postedChapters, totalChapters] = chaptersText.split('/').map(s => s.trim())
 
+    const authors = $('a[rel="author"]').map((_, el) => $(el).text().trim()).get()
+
     const workData: Work = {
       id: workId,
       title: $('h2.title.heading').text().trim(),
-      author: $('a[rel="author"]').text().trim(),
+      author: authors[0] ?? '',
+      authors: authors,
       summary: $('.summary .userstuff').html() || '',
       language: $('dd.language').text().trim(),
       stats: {
@@ -166,4 +169,45 @@ async function getChapterContent(
   }
 }
 
-export { getWork, getChapters, getChapterContent }
+async function getWorkDownloadLinks(workId: string, options?: RequestOptions): Promise<WorkDownloadLink[]> {
+  const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
+
+  try {
+    const html = await request(url, options)
+    const $ = cheerio.load(html)
+
+    // check if login limited
+    if ($('#loginform form#new_user').length > 0) {
+      throw new AuthenticationRequiredError(workId)
+    }
+
+    // check if the work exists
+    if (!$('h2.title.heading').length) {
+      throw new AO3Error(`Invalid work page for work ID: ${workId}`)
+    }
+
+    const downloadLinks: WorkDownloadLink[] = []
+
+    $('li.download a[href*="/downloads/"]').each((_, el) => {
+      const href = $(el).attr('href')
+      if (!href) return
+
+      const downloadUrl = new URL(href, 'https://archiveofourown.org')
+      const format = downloadUrl.pathname.split('.').pop()?.toUpperCase()
+      if (format === 'HTML' || format === 'EPUB' || format === 'PDF' || format === 'MOBI' || format === 'AZW3') {
+        downloadLinks.push({ format, url: downloadUrl.toString() })
+      }
+    })
+
+    return downloadLinks
+
+  } catch (error) {
+    if (error instanceof AO3Error && error.statusCode === 404) {
+      throw new WorkNotFoundError(workId)
+    }
+
+    throw error
+  }
+}
+
+export { getWork, getChapters, getChapterContent, getWorkDownloadLinks }

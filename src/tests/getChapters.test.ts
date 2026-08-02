@@ -33,8 +33,6 @@ describe('getChapters', () => {
     const workId = '35961484'
     const chapters = await getChapters(workId)
 
-    console.log(chapters)
-
     expect(Array.isArray(chapters)).toBe(true)
     expect(chapters.length).toBeGreaterThan(1)
 
@@ -48,8 +46,6 @@ describe('getChapters', () => {
   it('should return an array with a single chapter for a single-chapter work', async () => {
     const workId = '57038482'
     const chapters = await getChapters(workId)
-
-    console.log(chapters)
 
     expect(Array.isArray(chapters)).toBe(true)
     expect(chapters.length).toBe(1)

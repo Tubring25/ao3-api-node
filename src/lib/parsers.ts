@@ -202,9 +202,12 @@ function parseBookmarkWork(
   const chapterText = workElement.find('dd.chapters').text().trim()
   const chapterMatch = chapterText.match(/(\d+)\/(\d+|\?)/)
 
+  const authors = workElement.find('a[rel="author"]').map((_, el) => $(el).text().trim()).get()
+
   return {
     title: workElement.find('h4.heading a[href*="/works/"]').first().text().trim(),
-    author: workElement.find('a[rel="author"]').text().trim(),
+    author: authors[0] ?? '',
+    authors,
     summary: workElement.find('.summary').first().text().trim(),
     rating: workElement.find('.rating .text').text().trim(),
     warnings: workElement.find('.warnings .text').map((i, el) => $(el).text().trim()).get(),

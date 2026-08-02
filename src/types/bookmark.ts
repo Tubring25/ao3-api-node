@@ -17,6 +17,7 @@ export interface BookmarkSearchResult {
   work: {
     title: string;
     author: string;
+    authors: string[];
     summary: string;
     rating: string;
     warnings: string[];

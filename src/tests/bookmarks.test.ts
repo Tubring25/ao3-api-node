@@ -24,6 +24,7 @@ vi.mock('got-scraping', () => ({
                 </h4>
                 <p class="byline">
                   by <a rel="author" href="/users/testauthor">testauthor</a>
+                  <a rel="author" href="/users/coauthor">coauthor</a>
                 </p>
                 <blockquote class="summary">
                   <p>This is a test work summary.</p>
@@ -87,7 +88,9 @@ describe('getUserBookmarks', () => {
     expect(bookmark.bookmark).toHaveProperty('id', '12345')
     expect(bookmark.bookmark).toHaveProperty('workId', '123456')
     expect(bookmark.bookmark).toHaveProperty('workTitle', 'Test Work Title')
-    expect(bookmark.bookmark).toHaveProperty('workAuthor', 'testauthor')
+    expect(bookmark.bookmark.workAuthor).toBe('testauthor')
+    expect(bookmark.work.author).toBe('testauthor')
+    expect(bookmark.work.authors).toEqual(['testauthor', 'coauthor'])
     expect(bookmark.bookmark).toHaveProperty('username', 'testuser')
     expect(bookmark.bookmark).toHaveProperty('notes', 'This is a bookmark note.')
     expect(bookmark.bookmark).toHaveProperty('tags')
@@ -128,6 +131,7 @@ describe('getWorkBookmarks', () => {
     expect(bookmark.bookmark).toHaveProperty('notes', 'Bookmark note.')
     expect(bookmark.work).toHaveProperty('title', 'Test Work Title')
     expect(bookmark.work).toHaveProperty('words', 1000)
+    expect(bookmark.work.authors).toEqual(['testauthor'])
   })
 
   it('should throw error for non-existent work', async () => {

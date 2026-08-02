@@ -71,6 +71,7 @@ The package only fetches publicly available data. It does not support authentica
 #### `getWork`
 Get the full meta data for a single work.
 `author` contains the first author, while `authors` contains all authors in page order.
+`series` contains each series ID, title, and the work's position in that series. It is empty when the work does not belong to a series.
 
 **Signature:** `getWork(workId: string, requestOptions?: RequestOptions): Promise<Work>`
 

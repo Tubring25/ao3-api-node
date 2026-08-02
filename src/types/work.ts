@@ -62,6 +62,15 @@ export interface WorkTags {
 }
 
 /**
+ * work series affiliation
+ */
+export interface WorkSeries {
+  id: string;
+  title: string;
+  position: number
+}
+
+/**
  * Full information about a work
  */
 export interface Work {
@@ -70,6 +79,7 @@ export interface Work {
   author: string;
   authors: string[];
   summary: string; // HTML string
+  series: WorkSeries[];
   language: string;
   stats: WorkStats;
   tags: WorkTags;

@@ -53,6 +53,15 @@ vi.mock('got-scraping', () => {
                   <h2 class="title heading">Work Title</h2>
                   <a rel="author">FirstAuthor</a>
                   <a rel="author">SecondAuthor</a>
+
+                  <dd class="series">
+                    <span class="position">
+                      Part 1 of <a href="/series/4001494">First Series</a>
+                    </span>
+                    <span class="position">
+                      Part 3 of <a href="/series/123456">Second Series</a>
+                    </span>
+                  </dd>
                 </main>
               </body>
             </html>
@@ -102,6 +111,8 @@ describe('getWork', () => {
 
     expect(work.stats.bookmarks).toBe(654)
     expect(work2.stats.bookmarks).toBe(3)
+
+    expect(work.series).toEqual([])
   })
 
   it('should throw an error for an invalid workID using mock', async() => {
@@ -147,5 +158,13 @@ describe('getWork', () => {
 
     expect(work.authors).toEqual(['Anonymous'])
     expect(work.author).toBe('Anonymous')
+  })
+  it('should receive a series list info', async () => {
+    const work: Work = await getWork('333333')
+
+    expect(work.series).toEqual([
+      { id: '4001494', title: 'First Series', position: 1 },
+      { id: '123456', title: 'Second Series', position: 3 },
+    ])
   })
 })

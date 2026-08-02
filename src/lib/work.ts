@@ -39,6 +39,23 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
       anonymousAuthor && authors.push(anonymousAuthor)
     }
 
+    // series info
+    const series: Work['series'] = []
+
+    $('dd.series span.position').each((_, el) => {
+      const positionElement = $(el)
+      const seriesLink = positionElement.find('a[href^="/series/"]').first()
+
+      const href = seriesLink.attr('href')
+      const id = href?.match(/\/series\/(\d+)/)?.[1]
+      const title = seriesLink.text().trim()
+      const positionMatch = positionElement.text().match(/Part\s+(\d+)\s+of/i)
+
+      if (!id || !title || !positionMatch) return
+
+      series.push({id, title, position: parseInt(positionMatch[1], 10)})
+    })
+
     const workData: Work = {
       id: workId,
       title: $('h2.title.heading').text().trim(),
@@ -67,7 +84,8 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
         relationships: $('dd.relationship a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
         characters: $('dd.character a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
         freeforms: $('dd.freeform a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get()
-      }
+      },
+      series,
     }
 
     return workData

@@ -5,6 +5,7 @@ export type {
   Category,
   WorkStats,
   WorkTags,
+  WorkSeries,
   Work,
   WorkSearchResult,
   Chapter,

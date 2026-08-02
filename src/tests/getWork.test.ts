@@ -10,7 +10,7 @@ vi.mock('got-scraping', () => {
 
       const workId = options.url.split('/works/')[1].split('?')[0]
 
-      if (workId === '35961484' || workId === '66534724') {
+      if (workId === '35961484' || workId === '66534724' || workId === '57038482') {
         const mockHtmlPath = path.join(__dirname, '../fixtures', `work-${workId}.html`)
         const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
 
@@ -141,5 +141,11 @@ describe('getWork', () => {
 
     expect(work.authors).toEqual(['FirstAuthor', 'SecondAuthor'])
     expect(work.author).toBe('FirstAuthor')
+  })
+  it('should receive an anonymous author', async () => {
+    const work: Work = await getWork('57038482')
+
+    expect(work.authors).toEqual(['Anonymous'])
+    expect(work.author).toBe('Anonymous')
   })
 })

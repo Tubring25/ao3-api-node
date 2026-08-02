@@ -211,6 +211,7 @@ console.log(`Found ${results.totalResults} works by TheHomelyBadger.`); // Found
 
 #### `getUserBookmarks`
 Get a paginated list of a user's public bookmarks.
+The embedded `work.author` contains the first author, while `work.authors` contains all authors.
 
 **Signature:** `getUserBookmarks(username: string, page: number = 1, requestOptions?: RequestOptions): Promise<BookmarkResults>`
 

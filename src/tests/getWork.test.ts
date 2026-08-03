@@ -125,11 +125,13 @@ describe('getWork', () => {
 
   it('should pass the proxyUrl to got-scraping', async () => {
     const proxyUrl = 'http://localhost:8080';
-    await getWork('35961484', { proxyUrl });
+    const work = await getWork('35961484', { proxyUrl });
     expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
       url: expect.any(String),
       proxyUrl,
     }));
+
+    expect(work.collections).toEqual([])
   });
 
   it('should reject an empty work page', async () => {
@@ -153,11 +155,13 @@ describe('getWork', () => {
     expect(work.authors).toEqual(['FirstAuthor', 'SecondAuthor'])
     expect(work.author).toBe('FirstAuthor')
   })
-  it('should receive an anonymous author', async () => {
+  it('should receive an anonymous author and collections info', async () => {
     const work: Work = await getWork('57038482')
 
     expect(work.authors).toEqual(['Anonymous'])
     expect(work.author).toBe('Anonymous')
+
+    expect(work.collections).toEqual([{ name: 'anonymous', title: 'Anonymous' }])
   })
   it('should receive a series list info', async () => {
     const work: Work = await getWork('333333')

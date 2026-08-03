@@ -6,6 +6,7 @@ export type {
   WorkStats,
   WorkTags,
   WorkSeries,
+  WorkCollection,
   Work,
   WorkSearchResult,
   Chapter,

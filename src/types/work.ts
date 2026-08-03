@@ -71,6 +71,14 @@ export interface WorkSeries {
 }
 
 /**
+ * work collection affiliation
+ */
+export interface WorkCollection {
+  name: string,
+  title: string
+}
+
+/**
  * Full information about a work
  */
 export interface Work {
@@ -80,6 +88,7 @@ export interface Work {
   authors: string[];
   summary: string; // HTML string
   series: WorkSeries[];
+  collections: WorkCollection[];
   language: string;
   stats: WorkStats;
   tags: WorkTags;

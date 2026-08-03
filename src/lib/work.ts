@@ -41,7 +41,6 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
 
     // series info
     const series: Work['series'] = []
-
     $('dd.series span.position').each((_, el) => {
       const positionElement = $(el)
       const seriesLink = positionElement.find('a[href^="/series/"]').first()
@@ -54,6 +53,18 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
       if (!id || !title || !positionMatch) return
 
       series.push({id, title, position: parseInt(positionMatch[1], 10)})
+    })
+
+    // collections info
+    const collections: Work['collections'] = []
+    $('dd.collections a[href^="/collections/"]').each((_, el) => {
+      const collectionLink = $(el)
+      const href = collectionLink.attr('href')
+      const name = href?.match(/\/collections\/([^/?#]+)/)?.[1]
+      const title = collectionLink.text()
+
+      if (!name || !title) return
+      collections.push({name, title})
     })
 
     const workData: Work = {
@@ -86,6 +97,7 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
         freeforms: $('dd.freeform a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get()
       },
       series,
+      collections,
     }
 
     return workData

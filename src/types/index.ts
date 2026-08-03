@@ -31,6 +31,12 @@ export type {
   Series
 } from './series.js'
 
+// Collection-related types
+export type {
+  CollectionChallengeType,
+  Collection
+} from './collection.js'
+
 // User-related types
 export type {
   UserProfile
@@ -58,5 +64,6 @@ export {
   ChapterNotFoundError,
   UserNotFoundError,
   SeriesNotFoundError,
+  CollectionNotFoundError,
   AuthenticationRequiredError
 } from './common.js'

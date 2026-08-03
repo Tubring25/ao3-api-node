@@ -3,7 +3,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import { getWorkComments, getChapterComments, getAllWorkComments } from "../index.js";
 import { gotScraping } from "got-scraping";
-import { ChapterNotFoundError, WorkNotFoundError } from "../types/index.js";
+import { parseCommentList } from "../lib/parsers.js";
+import { AO3Error, ChapterNotFoundError, WorkNotFoundError } from "../types/index.js";
 
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string, proxyUrl?: string}) => {
@@ -37,12 +38,19 @@ vi.mock('got-scraping', () => ({
           </body>
         </html>
       `
-      return { statusCode: 200, body: mockHtml }
+      return {
+        statusCode: 200,
+        body: `<div id="main" class="works-show region">${mockHtml}</div>`
+      }
     }
     else if(options.url.includes('/works/123456?show_comments=true')) {
       const mockHtmlPath = path.join(__dirname, '../fixtures', 'comments-current.html')
-      const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
+      const fixture = await fs.readFile(mockHtmlPath, 'utf-8')
+      const mockHtml = `<div id="main" class="works-show region">${fixture}</div>`
       return { statusCode: 200, body: mockHtml }
+    }
+    else if(options.url.includes('/works/111111?show_comments=true')) {
+      return { statusCode: 200, body: '<html><body>Invalid page</body></html>' }
     }
     else if(options.url.includes('/chapters/789?show_comments=true')) {
       const mockHtml = `
@@ -65,7 +73,13 @@ vi.mock('got-scraping', () => ({
           </body>
         </html>
       `
-      return { statusCode: 200, body: mockHtml }
+      return {
+        statusCode: 200,
+        body: `<div id="main" class="chapters-show region">${mockHtml}</div>`
+      }
+    }
+    else if(options.url.includes('/chapters/111?show_comments=true')) {
+      return { statusCode: 200, body: '<html><body>Invalid page</body></html>' }
     }
     return { statusCode: 404, statusMessage: 'Not Found' }
   })
@@ -128,6 +142,10 @@ describe('getWorkComments', () => {
   it('should throw error for non-existent work', async () => {
     await expect(getWorkComments('999999')).rejects.toBeInstanceOf(WorkNotFoundError)
   })
+
+  it('should throw AO3Error for an invalid work comments page', async () => {
+    await expect(getWorkComments('111111')).rejects.toBeInstanceOf(AO3Error)
+  })
 })
 
 describe('getChapterComments', () => {
@@ -150,6 +168,11 @@ describe('getChapterComments', () => {
   it('should throw error for non-existent chapter', async () => {
     await expect(getChapterComments('123456', '999999')).rejects.toBeInstanceOf(ChapterNotFoundError)
   })
+
+  it('should throw AO3Error for an invalid chapter comments page', async () => {
+    await expect(getChapterComments('123456', '111')).rejects.toBeInstanceOf(AO3Error)
+  })
+
   it('send request with timeout and signal', async () => {
     const controller = new AbortController()
     const proxyUrl = 'http://localhost:8080'
@@ -164,6 +187,23 @@ describe('getChapterComments', () => {
       timeout: { request: 5000 },
       signal: controller.signal
     }))
+  })
+})
+
+describe('parseCommentList', () => {
+  it.each(['works-show', 'chapters-show'])('returns empty results for a valid %s page', pageClass => {
+    const html = `<div id="main" class="${pageClass} region"></div>`
+
+    expect(parseCommentList(html)).toEqual({
+      comments: [],
+      total: 0,
+      page: 1,
+      totalPages: 1
+    })
+  })
+
+  it('rejects an invalid comments page', () => {
+    expect(() => parseCommentList('<html><body>Invalid page</body></html>')).toThrow(AO3Error)
   })
 })
 

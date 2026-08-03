@@ -16,6 +16,10 @@ async function getSeries(seriesId: string, requestOptions?: RequestOptions): Pro
     const html = await request(url, requestOptions)
     const $ = cheerio.load(html)
 
+    if (!$('#main.series-show').length) {
+      throw new AO3Error(`Invalid series page for series ID: ${seriesId}`)
+    }
+
     const seriesMeta = $('dl.series.meta')
     const getMetaText = (label: string) => seriesMeta.find(`dt:contains("${label}")`).next('dd').text().trim()
     const getNumericStat = (label: string) => parseInt(getMetaText(label).replace(/,/g, ''), 10) || 0

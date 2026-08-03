@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { getUserWorks } from "../index.js";
+import { AO3Error, getUserWorks, UserNotFoundError } from "../index.js";
 import { gotScraping } from "got-scraping";
 
 afterEach(async () => {
@@ -10,6 +10,10 @@ afterEach(async () => {
 
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: { url: string }) => {
+    if (options.url.includes('/users/InvalidPage/works')) {
+      return { statusCode: 200, body: '<html><body></body></html>' }
+    }
+
     if (options.url.includes('/users/TheHomelyBadger/works')) {
       const mockHtmlPath = path.join(__dirname, '../fixtures', 'user-TheHomelyBadger-works.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
@@ -41,4 +45,12 @@ describe("getUserWorks", () => {
       proxyUrl,
     }));
   });
+
+  it('should throw AO3Error for an invalid user works page', async () => {
+    await expect(getUserWorks('InvalidPage')).rejects.toBeInstanceOf(AO3Error)
+  })
+
+  it('should throw UserNotFoundError for a missing user', async () => {
+    await expect(getUserWorks('MissingUser')).rejects.toBeInstanceOf(UserNotFoundError)
+  })
 })

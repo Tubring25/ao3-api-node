@@ -16,6 +16,10 @@ async function getUserProfile(username: string, requestOptions?: RequestOptions)
     const html = await request(url, requestOptions)
     const $ = cheerio.load(html)
 
+    if (!$('#main.profile-show').length) {
+      throw new AO3Error(`Invalid user profile page for username: ${username}`)
+    }
+
     const meta = $('dl.meta')
 
     const getMetaText = (label: string) => meta.find(`dt:contains("${label}")`).next('dd').text().trim()

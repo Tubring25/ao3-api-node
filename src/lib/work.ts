@@ -61,7 +61,7 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
       const collectionLink = $(el)
       const href = collectionLink.attr('href')
       const name = href?.match(/\/collections\/([^/?#]+)/)?.[1]
-      const title = collectionLink.text()
+      const title = collectionLink.text().trim()
 
       if (!name || !title) return
       collections.push({name, title})

@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { SearchResults, WorkSearchResult, BookmarkResults, BookmarkSearchResult, CommentResults, Comment } from '../types/index.js';
+import { SearchResults, WorkSearchResult, BookmarkResults, BookmarkSearchResult, CommentResults, Comment, AO3Error } from '../types/index.js';
 import { buildCommentThreads } from './commentThreads.js'
 
 /**
@@ -9,6 +9,11 @@ import { buildCommentThreads } from './commentThreads.js'
  */
 export function parseWorkList(html: string): SearchResults {
   const $ = cheerio.load(html)
+
+  if (!$('#main.works-search').length && !$('#main.works-index').length) {
+    throw new AO3Error('Invalid work listing page')
+  }
+
 
   let totalResults = 0
   const headings = $('h2.heading, h3.heading')
@@ -86,6 +91,11 @@ export function parseWorkBlurb(
  */
 export function parseBookmarkList(html: string): BookmarkResults {
   const $ = cheerio.load(html)
+
+  if (!$('#main.bookmarks-index').length) {
+    throw new AO3Error('Invalid bookmark listing page')
+  }
+
   const total = parseTotal($('h2.heading').text())
 
   const bookmarks: BookmarkSearchResult[] = $('ol.bookmark li.bookmark')
@@ -105,6 +115,11 @@ export function parseBookmarkList(html: string): BookmarkResults {
 /** Parses the distinct layout used by a work's public bookmarks page. */
 export function parseWorkBookmarkList(html: string): BookmarkResults {
   const $ = cheerio.load(html)
+
+  if (!$('#main.bookmarks-index').length) {
+    throw new AO3Error('Invalid bookmark listing page')
+  }
+
   const total = parseTotal($('h2.heading').text())
   const { page, totalPages } = parsePagination($)
   const workElement = $('ol.bookmark > li.work').get(0)
@@ -239,6 +254,11 @@ function parseBookmarkWork(
  */
 export function parseCommentList(html: string): CommentResults {
   const $ = cheerio.load(html)
+
+  if (!$('#main.works-show').length && !$('#main.chapters-show').length) {
+    throw new AO3Error('Invalid comment listing page')
+  }
+
   const commentsToggleText = $('a[href*="/comments/hide_comments"]').text()
   const currentTotalMatch = commentsToggleText.match(/\(([\d,]+)\)/)
   const legacyTotalMatch = $('h3.heading').text().match(/([\d,]+) Comments/)

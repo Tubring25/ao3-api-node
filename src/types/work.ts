@@ -74,7 +74,7 @@ export interface WorkSeries {
  * work collection affiliation
  */
 export interface WorkCollection {
-  name: string,
+  name: string;
   title: string
 }
 

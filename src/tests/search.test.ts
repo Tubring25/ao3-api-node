@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { promises as fs } from 'fs'
 import path from 'path'
-import { CrossoverMode, search, SearchOptions } from '../index.js'
+import { AO3Error, CrossoverMode, search, SearchOptions } from '../index.js'
 import { gotScraping } from 'got-scraping'
 
 const allParams: SearchOptions = {
@@ -39,6 +39,11 @@ const crossoverCases: Array<[CrossoverMode, string]> = [
 vi.mock('got-scraping', async () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string}) => {
     if (options.url.includes('/works/search')) {
+      const url = new URL(options.url)
+      if (url.searchParams.get('work_search[query]') === 'invalid-page') {
+        return { statusCode: 200, body: '<html><body></body></html>' }
+      }
+
       const mockHtmlPath = path.join(__dirname, '../fixtures', 'search-results.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return {
@@ -165,5 +170,9 @@ describe('search', () => {
     const call = vi.mocked(gotScraping).mock.calls[0][0] as { url: string }
     const params = new URL(call.url).searchParams
     expect(params.get('work_search[crossover]')).toBe(expected)
+  })
+
+  it('should throw AO3Error for an invalid search results page', async () => {
+    await expect(search({ query: 'invalid-page' })).rejects.toBeInstanceOf(AO3Error)
   })
 })

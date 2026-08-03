@@ -1,7 +1,7 @@
 import { describe, vi, expect, afterEach, it } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { getUserProfile } from "../index.js";
+import { AO3Error, getUserProfile, UserNotFoundError } from "../index.js";
 import { gotScraping } from "got-scraping";
 
 vi.mock('got-scraping', () => ({
@@ -15,6 +15,9 @@ vi.mock('got-scraping', () => ({
       const mockHtmlPath = path.join(__dirname, '../fixtures', 'user-TheHomelyBadgerNoBio-profile.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return { statusCode: 200, body: mockHtml }
+    }
+    else if(options.url.includes('/users/InvalidPage')) {
+      return { statusCode: 200, body: '<html><body></body></html>' }
     }
     return { statusCode: 404, statusMessage: 'Not Found' }
   })
@@ -35,8 +38,12 @@ describe('getUserProfile', () => {
     expect(profile.bioHtml).toContain('https://twitter.com/TheHomelyBadger')
   })
 
-  it('should throw an error for an invalid user', async () => {
-    await expect(getUserProfile('InvalidUser')).rejects.toThrow()
+  it('should throw UserNotFoundError for a missing user', async () => {
+    await expect(getUserProfile('InvalidUser')).rejects.toBeInstanceOf(UserNotFoundError)
+  })
+
+  it('should throw AO3Error for an invalid user profile page', async () => {
+    await expect(getUserProfile('InvalidPage')).rejects.toBeInstanceOf(AO3Error)
   })
 
   it('should return null for the bioHtml when the user has no bio', async () => {

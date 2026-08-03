@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { parseWorkList, parseWorkBlurb } from '../lib/parsers.js'
 import * as cheerio from 'cheerio'
+import { AO3Error } from '../index.js'
 
 describe('parseWorkList', () => {
   it('should handle HTML with "of X Works" format', () => {
     const html = `
       <html>
+        <div id="main" class="works-index">
         <h2 class="heading">1 - 20 of 1,234 Works in Test Fandom</h2>
         <ol class="work index">
           <li class="work blurb group" id="work_123">
@@ -26,6 +28,7 @@ describe('parseWorkList', () => {
             </dl>
           </li>
         </ol>
+        </div>
       </html>
     `
     
@@ -38,6 +41,7 @@ describe('parseWorkList', () => {
   it('should handle HTML with "X Found" format', () => {
     const html = `
       <html>
+        <div id="main" class="works-search">
         <h3 class="heading">567 Found</h3>
         <ol class="work index">
           <li class="work blurb group" id="work_456">
@@ -58,6 +62,7 @@ describe('parseWorkList', () => {
             </dl>
           </li>
         </ol>
+        </div>
       </html>
     `
     
@@ -69,14 +74,20 @@ describe('parseWorkList', () => {
   it('should handle empty work list', () => {
     const html = `
       <html>
+        <div id="main" class="works-index">
         <h2 class="heading">0 Found</h2>
         <ol class="work index"></ol>
+        </div>
       </html>
     `
     
     const result = parseWorkList(html)
     expect(result.totalResults).toBe(0)
     expect(result.works).toHaveLength(0)
+  })
+
+  it('should reject HTML without a work listing root', () => {
+    expect(() => parseWorkList('<html><body></body></html>')).toThrow(AO3Error)
   })
 })
 

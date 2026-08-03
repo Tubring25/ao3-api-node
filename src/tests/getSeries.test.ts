@@ -1,7 +1,7 @@
 import { describe, vi, expect, afterEach, it } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { getSeries } from "../index.js";
+import { AO3Error, getSeries, SeriesNotFoundError } from "../index.js";
 import { gotScraping } from "got-scraping";
 
 vi.mock('got-scraping', () => ({
@@ -10,6 +10,9 @@ vi.mock('got-scraping', () => ({
       const mockHtmlPath = path.join(__dirname, '../fixtures', 'series-4001494.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return { statusCode: 200, body: mockHtml }
+    }
+    if (options.url.includes('/series/111111')) {
+      return { statusCode: 200, body: '<html><body></body></html>' }
     }
     return { statusCode: 404, statusMessage: 'Not Found' }
   })
@@ -39,5 +42,12 @@ describe('getSeries', () => {
       proxyUrl,
     }));
   });
-  
+
+  it('should throw AO3Error for an invalid series page', async () => {
+    await expect(getSeries('111111')).rejects.toBeInstanceOf(AO3Error)
+  })
+
+  it('should throw SeriesNotFoundError for a missing series', async () => {
+    await expect(getSeries('999999')).rejects.toBeInstanceOf(SeriesNotFoundError)
+  })
 })

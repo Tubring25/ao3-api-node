@@ -4,7 +4,7 @@ import path from "path";
 import { getUserBookmarks, getWorkBookmarks } from "../index.js";
 import { gotScraping } from "got-scraping";
 import { parseBookmarkList, parseWorkBookmarkList } from "../lib/parsers.js";
-import { UserNotFoundError, WorkNotFoundError } from "../types/index.js";
+import { AO3Error, UserNotFoundError, WorkNotFoundError } from "../types/index.js";
 
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string, proxyUrl?: string}) => {
@@ -13,56 +13,65 @@ vi.mock('got-scraping', () => ({
         <html>
           <head><title>testuser's Bookmarks</title></head>
           <body>
-            <h2 class="heading">Bookmarks (1 of 1)</h2>
-            <ol class="bookmark index group">
-              <li class="bookmark" id="bookmark_12345">
-                <div class="user">
-                  <a href="/users/testuser">testuser</a>
-                </div>
-                <h4 class="heading">
-                  <a href="/works/123456">Test Work Title</a>
-                </h4>
-                <p class="byline">
-                  by <a rel="author" href="/users/testauthor">testauthor</a>
-                  <a rel="author" href="/users/coauthor">coauthor</a>
-                </p>
-                <blockquote class="summary">
-                  <p>This is a test work summary.</p>
-                </blockquote>
-                <p class="datetime">01 Jan 2024</p>
-                <div class="notes">
-                  <blockquote>This is a bookmark note.</blockquote>
-                </div>
-                <ul class="tags">
-                  <li><a class="tag">Test Tag</a></li>
-                </ul>
-                <dl class="stats">
-                  <dt>Rating:</dt>
-                  <dd class="rating"><span class="text">General Audiences</span></dd>
-                  <dt>Words:</dt>
-                  <dd class="words">1000</dd>
-                  <dt>Chapters:</dt>
-                  <dd class="chapters">1/1</dd>
-                  <dt>Kudos:</dt>
-                  <dd class="kudos">50</dd>
-                  <dt>Comments:</dt>
-                  <dd class="comments">10</dd>
-                  <dt>Bookmarks:</dt>
-                  <dd class="bookmarks">5</dd>
-                  <dt>Hits:</dt>
-                  <dd class="hits">200</dd>
-                </dl>
-              </li>
-            </ol>
+            <div id="main" class="bookmarks-index region">
+              <h2 class="heading">Bookmarks (1 of 1)</h2>
+              <ol class="bookmark index group">
+                <li class="bookmark" id="bookmark_12345">
+                  <div class="user">
+                    <a href="/users/testuser">testuser</a>
+                  </div>
+                  <h4 class="heading">
+                    <a href="/works/123456">Test Work Title</a>
+                  </h4>
+                  <p class="byline">
+                    by <a rel="author" href="/users/testauthor">testauthor</a>
+                    <a rel="author" href="/users/coauthor">coauthor</a>
+                  </p>
+                  <blockquote class="summary">
+                    <p>This is a test work summary.</p>
+                  </blockquote>
+                  <p class="datetime">01 Jan 2024</p>
+                  <div class="notes">
+                    <blockquote>This is a bookmark note.</blockquote>
+                  </div>
+                  <ul class="tags">
+                    <li><a class="tag">Test Tag</a></li>
+                  </ul>
+                  <dl class="stats">
+                    <dt>Rating:</dt>
+                    <dd class="rating"><span class="text">General Audiences</span></dd>
+                    <dt>Words:</dt>
+                    <dd class="words">1000</dd>
+                    <dt>Chapters:</dt>
+                    <dd class="chapters">1/1</dd>
+                    <dt>Kudos:</dt>
+                    <dd class="kudos">50</dd>
+                    <dt>Comments:</dt>
+                    <dd class="comments">10</dd>
+                    <dt>Bookmarks:</dt>
+                    <dd class="bookmarks">5</dd>
+                    <dt>Hits:</dt>
+                    <dd class="hits">200</dd>
+                  </dl>
+                </li>
+              </ol>
+            </div>
           </body>
         </html>
       `
       return { statusCode: 200, body: mockHtml }
     }
+    else if(options.url.includes('/users/invalidpage/bookmarks')) {
+      return { statusCode: 200, body: '<html><body>Invalid page</body></html>' }
+    }
     else if(options.url.includes('/works/123456/bookmarks')) {
       const mockHtmlPath = path.join(__dirname, '../fixtures', 'work-bookmarks-current.html')
-      const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
+      const fixture = await fs.readFile(mockHtmlPath, 'utf-8')
+      const mockHtml = `<div id="main" class="bookmarks-index region">${fixture}</div>`
       return { statusCode: 200, body: mockHtml }
+    }
+    else if(options.url.includes('/works/111111/bookmarks')) {
+      return { statusCode: 200, body: '<html><body>Invalid page</body></html>' }
     }
     return { statusCode: 404, statusMessage: 'Not Found' }
   })
@@ -112,6 +121,10 @@ describe('getUserBookmarks', () => {
   it('should throw error for non-existent user', async () => {
     await expect(getUserBookmarks('nonexistentuser')).rejects.toBeInstanceOf(UserNotFoundError)
   })
+
+  it('should throw AO3Error for an invalid user bookmarks page', async () => {
+    await expect(getUserBookmarks('invalidpage')).rejects.toBeInstanceOf(AO3Error)
+  })
 })
 
 describe('getWorkBookmarks', () => {
@@ -138,6 +151,10 @@ describe('getWorkBookmarks', () => {
     await expect(getWorkBookmarks('999999')).rejects.toBeInstanceOf(WorkNotFoundError)
   })
 
+  it('should throw AO3Error for an invalid work bookmarks page', async () => {
+    await expect(getWorkBookmarks('111111')).rejects.toBeInstanceOf(AO3Error)
+  })
+
   it('should send request with timeout and signal', async () => {
     const controller = new AbortController()
     const proxyUrl = 'http://localhost:8080'
@@ -160,9 +177,28 @@ describe('bookmark totals', () => {
     ['0 Bookmarks', 0],
     ['1 - 20 of 1,234 Bookmarks', 1234]
   ])('parses %s', (heading, expectedTotal) => {
-    const html = `<h2 class="heading">${heading}</h2><ol class="bookmark"></ol>`
+    const html = `
+      <div id="main" class="bookmarks-index region">
+        <h2 class="heading">${heading}</h2>
+        <ol class="bookmark"></ol>
+      </div>
+    `
 
     expect(parseBookmarkList(html).total).toBe(expectedTotal)
     expect(parseWorkBookmarkList(html).total).toBe(expectedTotal)
+  })
+
+  it('returns empty results for a valid empty bookmarks page', () => {
+    const html = '<div id="main" class="bookmarks-index region"></div>'
+
+    expect(parseBookmarkList(html).bookmarks).toEqual([])
+    expect(parseWorkBookmarkList(html).bookmarks).toEqual([])
+  })
+
+  it('rejects invalid bookmark listing pages', () => {
+    const html = '<html><body>Invalid page</body></html>'
+
+    expect(() => parseBookmarkList(html)).toThrow(AO3Error)
+    expect(() => parseWorkBookmarkList(html)).toThrow(AO3Error)
   })
 })

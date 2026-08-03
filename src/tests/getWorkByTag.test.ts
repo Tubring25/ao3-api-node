@@ -1,12 +1,16 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
-import { getTagWorks } from "../index.js";
+import { AO3Error, getTagWorks } from "../index.js";
 import { gotScraping } from "got-scraping";
 
 vi.mock('got-scraping', async () => ({
   gotScraping: vi.fn().mockImplementation(async (option: {url: string}) => {
     const url = new URL(option.url)
+    if (url.pathname === '/works' && url.searchParams.get('tag_id') === 'Invalid Tag') {
+      return { statusCode: 200, body: '<html><body></body></html>' }
+    }
+
     if(url.pathname === '/works' && url.searchParams.get('tag_id') === 'Top Caitlyn (League of Legends)') {
       const mockHtmlPath = path.join(__dirname, '../fixtures', 'tag-CaitlynTop-works.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
@@ -85,4 +89,8 @@ describe('getTagWorks', () => {
       proxyUrl,
     }));
   });
+
+  it('should throw AO3Error for an invalid tag works page', async () => {
+    await expect(getTagWorks('Invalid Tag')).rejects.toBeInstanceOf(AO3Error)
+  })
 })

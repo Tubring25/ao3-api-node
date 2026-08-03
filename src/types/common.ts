@@ -62,6 +62,16 @@ export class SeriesNotFoundError extends AO3Error {
 }
 
 /**
+ * Error thrown when a collection is not found
+ */
+export class CollectionNotFoundError extends AO3Error {
+  constructor(collectionName: string) {
+    super(`Collection ${collectionName} not found`, 404)
+    this.name = 'CollectionNotFoundError'
+  }
+}
+
+/**
  * Error thrown when login limiation
  */
 export class AuthenticationRequiredError extends AO3Error {

@@ -20,6 +20,9 @@ Inspired by [ao3_api](https://github.com/wendytg/ao3_api).
     - [`getTagWorks`](#gettagworks)
   - [Series](#series)
     - [`getSeries`](#getseries)
+  - [Collections](#collections)
+    - [`getCollection`](#getcollection)
+    - [`getCollectionWorks`](#getcollectionworks)
   - [Users](#users)
     - [`getUserProfile`](#getuserprofile)
     - [`getUserWorks`](#getuserworks)
@@ -178,6 +181,34 @@ console.log(series.title); // 'Roommates AU'
 console.log(`This series has ${series.stats.works} works.`); // This series has 3 works.
 ```
 
+### Collections
+---
+#### `getCollection`
+Get meta data for a collection, including the description status and work count.
+
+**Signature:** `getCollection(name: string, requestOptions?: RequestOptions): Promise<Collection>`
+
+**Example:**
+```typescript
+import { getCollection } from 'ao3-api-nodejs';
+
+const collection = await getCollection('CaitlynKiramman_Violet');
+console.log(collection.workCount) // 8
+```
+
+#### `getCollectionWorks`
+Get a paginated list of works in a collection.
+
+**Signature:** `getCollectionWorks(name: string, page: number = 1, requestOptions?: RequestOptions): Promise<SearchResults>`
+
+**Example:**
+```typescript
+import { getCollectionWorks } from 'ao3-api-nodejs';
+
+const searchResults = await getCollectionWorks('CaitlynKiramman_Violet');
+console.log(searchResults.totalResults) // 8
+```
+
 ### Users
 ---
 
@@ -248,7 +279,13 @@ Get all comments for a work.
 
 ### Errors
 
-HTTP response failures use `AO3Error` and include a `statusCode`. Bookmark and comment helpers use `WorkNotFoundError`, `UserNotFoundError`, or `ChapterNotFoundError` for missing resources.
+HTTP response failures use `AO3Error`.
+Missing resources use :
+- `WorkNotFoundError`
+- `UserNotFoundError`
+- `ChapterNotFoundError`
+- `CollectionNotFoundError`
+- `SeriesNotFoundError`
 
 ## License
 MIT

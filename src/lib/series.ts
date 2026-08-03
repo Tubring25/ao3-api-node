@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 
-import { AO3Error, RequestOptions, Series, SeriesNotFoundError } from "../types/index.js";
-import { parseWorkBlurb } from "./parsers.js";
+import { AO3Error, RequestOptions, Series, SeriesNotFoundError, WorkSearchResult } from "../types/index.js";
+import { parseWorkBlurb, parsePagination } from "./parsers.js";
 import { request } from './request.js';
 /**
  * Gets information and a list of works for a specific series
@@ -24,6 +24,20 @@ async function getSeries(seriesId: string, requestOptions?: RequestOptions): Pro
     const getMetaText = (label: string) => seriesMeta.find(`dt:contains("${label}")`).next('dd').text().trim()
     const getNumericStat = (label: string) => parseInt(getMetaText(label).replace(/,/g, ''), 10) || 0
 
+    const works= $('ul.series.work li.work').map((_, el) => parseWorkBlurb(el, $)).get()
+    const { totalPages } = parsePagination($)
+    for (let i = 2; i <= totalPages; i++) {
+      const pageUrl = `${url}?page=${i}`
+      const pageHtml = await request(pageUrl, requestOptions)
+      const page$ = cheerio.load(pageHtml)
+
+      if (!page$('#main.series-show').length) {
+        throw new AO3Error(`Invalid series page for series ID: ${seriesId}`)
+      }
+
+      works.push(...page$('ul.series.work li.work').map((_, el) => parseWorkBlurb(el, page$)).get())
+    }
+
     return {
       id: seriesId,
       title: $('h2.heading').text().trim(),
@@ -36,7 +50,7 @@ async function getSeries(seriesId: string, requestOptions?: RequestOptions): Pro
         complete: getMetaText('Complete?') === 'Yes',
         bookmarks: getNumericStat('Bookmarks')
       },
-      works: $('ul.series.work li.work').map((i, el) => parseWorkBlurb(el, $)).get()
+      works
     }
   } catch (error) {
     if (error instanceof AO3Error && error.statusCode === 404) {

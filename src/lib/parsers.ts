@@ -356,7 +356,7 @@ function parseTotal(headingText: string): number {
   return match ? parseInt(match[1].replace(/,/g, ''), 10) : 0
 }
 
-function parsePagination($: cheerio.CheerioAPI): { page: number, totalPages: number } {
+export function parsePagination($: cheerio.CheerioAPI): { page: number, totalPages: number } {
   const page = parseInt($('.pagination .current').first().text(), 10) || 1
   const pageNumbers = $('.pagination .current, .pagination a')
     .map((i, el) => parseInt($(el).text(), 10))

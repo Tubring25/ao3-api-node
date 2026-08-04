@@ -23,6 +23,8 @@ Inspired by [ao3_api](https://github.com/wendytg/ao3_api).
   - [Collections](#collections)
     - [`getCollection`](#getcollection)
     - [`getCollectionWorks`](#getcollectionworks)
+  - [Tags](#tags)
+    - [`getTag`](#gettag)
   - [Users](#users)
     - [`getUserProfile`](#getuserprofile)
     - [`getUserWorks`](#getuserworks)
@@ -211,6 +213,26 @@ const searchResults = await getCollectionWorks('CaitlynKiramman_Violet');
 console.log(searchResults.totalResults) // 8
 ```
 
+### Tags
+---
+#### `getTag`
+Get detail info for a tag, including synonyms, parents, and children.
+`synonymsOf` is the canonical tag that the current tag points to.
+`synonyms` are synonym tags merged into the current canonical tag.
+`metaTags` and `subTags` are flat arrays, not keeping the tree structure.
+All info only include the content currently displayed on the AO3 page.
+
+**Signature:** `getTag(name: string, requestOptions?: RequestOptions): Promise<Tag>`
+
+**Example:**
+```typescript
+import { getTag } from 'ao3-api-nodejs';
+
+const tag = await getTag('Fluff');
+console.log(tag.category) // 'Additional Tags'
+console.log(tag.canonical) // true
+```
+
 ### Users
 ---
 
@@ -282,12 +304,13 @@ Get all comments for a work.
 ### Errors
 
 HTTP response failures use `AO3Error`.
-Missing resources use :
+Missing resources use:
 - `WorkNotFoundError`
 - `UserNotFoundError`
 - `ChapterNotFoundError`
 - `CollectionNotFoundError`
 - `SeriesNotFoundError`
+- `TagNotFoundError`
 
 ## License
 MIT

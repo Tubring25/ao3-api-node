@@ -72,6 +72,16 @@ export class CollectionNotFoundError extends AO3Error {
 }
 
 /**
+ * Error thrown when a tag is not found
+ */
+export class TagNotFoundError extends AO3Error {
+  constructor(tagName: string) {
+    super(`Tag ${tagName} not found`, 404)
+    this.name = 'TagNotFoundError'
+  }
+}
+
+/**
  * Error thrown when login limiation
  */
 export class AuthenticationRequiredError extends AO3Error {

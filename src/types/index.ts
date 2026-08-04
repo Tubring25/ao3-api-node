@@ -37,6 +37,12 @@ export type {
   Collection
 } from './collection.js'
 
+// Tag-related types
+export type {
+  TagCategory,
+  TagDetails
+} from './tag.js'
+
 // User-related types
 export type {
   UserProfile
@@ -65,5 +71,6 @@ export {
   UserNotFoundError,
   SeriesNotFoundError,
   CollectionNotFoundError,
+  TagNotFoundError,
   AuthenticationRequiredError
 } from './common.js'

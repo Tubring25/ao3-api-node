@@ -217,12 +217,12 @@ console.log(searchResults.totalResults) // 8
 ---
 #### `getTag`
 Get detail info for a tag, including synonyms, parents, and children.
-`synonymsOf` is the canonical tag that the current tag points to.
+`synonymOf` is the canonical tag that the current tag points to.
 `synonyms` are synonym tags merged into the current canonical tag.
 `metaTags` and `subTags` are flat arrays, not keeping the tree structure.
 All info only include the content currently displayed on the AO3 page.
 
-**Signature:** `getTag(name: string, requestOptions?: RequestOptions): Promise<Tag>`
+**Signature:** `getTag(tag: string, requestOptions?: RequestOptions): Promise<TagDetails>`
 
 **Example:**
 ```typescript

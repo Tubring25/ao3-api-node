@@ -140,3 +140,4 @@ dist/
 
 # macOS metadata
 .DS_Store
+.alma-snapshots

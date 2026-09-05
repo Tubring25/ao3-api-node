@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { SearchResults, WorkSearchResult, BookmarkResults, BookmarkSearchResult, CommentResults, Comment } from '../types/index.js';
+import { AO3Error, AuthenticationRequiredError, SearchResults, WorkSearchResult, BookmarkResults, BookmarkSearchResult, CommentResults, Comment } from '../types/index.js';
 import { buildCommentThreads } from './commentThreads.js'
 
 /**
@@ -10,24 +10,31 @@ import { buildCommentThreads } from './commentThreads.js'
 export function parseWorkList(html: string): SearchResults {
   const $ = cheerio.load(html)
 
-  let totalResults = 0
+  let totalResults: number | undefined
   const headings = $('h2.heading, h3.heading')
 
   headings.each((i, el) => {
     const headingText = $(el).text().trim()
 
-    let match = headingText.match(/of ([\d,]+) Works/)
-    if (match && match[1]) {
-      totalResults = parseInt(match[1].replace(/,/g, ''), 10)
-      return false
-    }
-
-    match = headingText.match(/^([\d,]+) Found/)
+    const match = headingText.match(/^[\d,]+\s*[-–]\s*[\d,]+\s+of\s+([\d,]+)\s+Works?\b/i)
+      || headingText.match(/^([\d,]+)\s+(?:Found|Works?)\b/i)
     if (match && match[1]) {
       totalResults = parseInt(match[1].replace(/,/g, ''), 10)
       return false
     }
   })
+
+  // AO3 search omits the count and list entirely when there are no matches.
+  const searchPage = $('#main.works-search')
+  const isEmptySearch = searchPage.children('h2.heading').text().trim() === 'Search Results'
+    && searchPage.children('p').filter((_, el) => /^No results found\./.test($(el).text().trim())).length > 0
+  if (totalResults === undefined && isEmptySearch && !$('ol.work.index').length) {
+    totalResults = 0
+  }
+
+  if (totalResults === undefined || (totalResults > 0 && !$('ol.work.index').length)) {
+    throw new AO3Error('Invalid work listing page')
+  }
 
   const works: WorkSearchResult[] = $('ol.work.index li.work')
     .map((i, el) => parseWorkBlurb(el, $))
@@ -86,6 +93,9 @@ export function parseWorkBlurb(
  */
 export function parseBookmarkList(html: string): BookmarkResults {
   const $ = cheerio.load(html)
+  if (!$('ol.bookmark').length && !/^0 Bookmarks?\b/i.test($('h2.heading').text().trim())) {
+    throw new AO3Error('Invalid bookmark listing page')
+  }
   const total = parseTotal($('h2.heading').text())
 
   const bookmarks: BookmarkSearchResult[] = $('ol.bookmark li.bookmark')
@@ -156,14 +166,15 @@ function parseBookmarkBlurb(
   const workId = workLink.attr('href')?.match(/\/works\/(\d+)/)?.[1] || ''
   const work = parseBookmarkWork(element, $)
 
-  const userLink = bookmarkElement.find('.user a')
+  const userModule = bookmarkElement.find('.user').first()
+  const userLink = userModule.find('a[href*="/users/"]').first()
   const username = userLink.text().trim()
-  const userId = userLink.attr('href')?.replace('/users/', '') || ''
+  const userId = userLink.attr('href')?.match(/\/users\/([^/?#]+)/)?.[1] || ''
 
-  const created = bookmarkElement.find('.datetime').text().trim()
-  const notes = bookmarkElement.find('.notes blockquote').text().trim() || null
+  const created = userModule.find('.datetime').first().text().trim()
+  const notes = userModule.find('.notes').first().text().trim() || null
 
-  const tags = bookmarkElement.find('.tag')
+  const tags = userModule.find('.tag')
     .map((i, tagEl) => $(tagEl).text().trim())
     .get()
     .filter(tag => tag.length > 0)
@@ -237,12 +248,19 @@ function parseBookmarkWork(
  * @param html The HTML of the comments page
  * @returns {CommentResults} The parsed comments with threading
  */
-export function parseCommentList(html: string): CommentResults {
+export function parseCommentList(html: string, workId?: string): CommentResults {
   const $ = cheerio.load(html)
+  if ($('#loginform form#new_user').length) {
+    if (workId !== undefined) throw new AuthenticationRequiredError(workId)
+    throw new AO3Error('Authentication required to read comments')
+  }
   const commentsToggleText = $('a[href*="/comments/hide_comments"]').text()
   const currentTotalMatch = commentsToggleText.match(/\(([\d,]+)\)/)
-  const legacyTotalMatch = $('h3.heading').text().match(/([\d,]+) Comments/)
+  const legacyTotalMatch = $('h3.heading').text().match(/([\d,]+) Comments?\b/)
   const totalMatch = currentTotalMatch || legacyTotalMatch
+  if (!totalMatch && !$('#comments').length) {
+    throw new AO3Error('Invalid comments page')
+  }
   const total = totalMatch ? parseInt(totalMatch[1].replace(/,/g, ''), 10) : 0
 
   const comments: Comment[] = $('[id^="comment_"].comment')

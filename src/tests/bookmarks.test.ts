@@ -9,54 +9,7 @@ import { UserNotFoundError, WorkNotFoundError } from "../types/index.js";
 vi.mock('got-scraping', () => ({
   gotScraping: vi.fn().mockImplementation(async (options: {url: string, proxyUrl?: string}) => {
     if(options.url.includes('/users/testuser/bookmarks')) {
-      const mockHtml = `
-        <html>
-          <head><title>testuser's Bookmarks</title></head>
-          <body>
-            <h2 class="heading">Bookmarks (1 of 1)</h2>
-            <ol class="bookmark index group">
-              <li class="bookmark" id="bookmark_12345">
-                <div class="user">
-                  <a href="/users/testuser">testuser</a>
-                </div>
-                <h4 class="heading">
-                  <a href="/works/123456">Test Work Title</a>
-                </h4>
-                <p class="byline">
-                  by <a rel="author" href="/users/testauthor">testauthor</a>
-                  <a rel="author" href="/users/coauthor">coauthor</a>
-                </p>
-                <blockquote class="summary">
-                  <p>This is a test work summary.</p>
-                </blockquote>
-                <p class="datetime">01 Jan 2024</p>
-                <div class="notes">
-                  <blockquote>This is a bookmark note.</blockquote>
-                </div>
-                <ul class="tags">
-                  <li><a class="tag">Test Tag</a></li>
-                </ul>
-                <dl class="stats">
-                  <dt>Rating:</dt>
-                  <dd class="rating"><span class="text">General Audiences</span></dd>
-                  <dt>Words:</dt>
-                  <dd class="words">1000</dd>
-                  <dt>Chapters:</dt>
-                  <dd class="chapters">1/1</dd>
-                  <dt>Kudos:</dt>
-                  <dd class="kudos">50</dd>
-                  <dt>Comments:</dt>
-                  <dd class="comments">10</dd>
-                  <dt>Bookmarks:</dt>
-                  <dd class="bookmarks">5</dd>
-                  <dt>Hits:</dt>
-                  <dd class="hits">200</dd>
-                </dl>
-              </li>
-            </ol>
-          </body>
-        </html>
-      `
+      const mockHtml = await fs.readFile(path.join(__dirname, '../fixtures/user-testuser-bookmarks.html'), 'utf-8')
       return { statusCode: 200, body: mockHtml }
     }
     else if(options.url.includes('/works/123456/bookmarks')) {
@@ -94,7 +47,9 @@ describe('getUserBookmarks', () => {
     expect(bookmark.bookmark).toHaveProperty('username', 'testuser')
     expect(bookmark.bookmark).toHaveProperty('notes', 'This is a bookmark note.')
     expect(bookmark.bookmark).toHaveProperty('tags')
-    expect(bookmark.bookmark.tags).toContain('Test Tag')
+    expect(bookmark.bookmark.tags).toEqual(['Test Tag'])
+    expect(bookmark.bookmark.created).toBe('01 Jan 2024')
+    expect(bookmark.bookmark.userId).toBe('testuser')
 
     expect(bookmark.work).toHaveProperty('title', 'Test Work Title')
     expect(bookmark.work).toHaveProperty('author', 'testauthor')

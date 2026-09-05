@@ -24,11 +24,11 @@ export async function getWorkComments(
   page: number = 1,
   requestOptions?: RequestOptions
 ): Promise<CommentResults> {
-  const url = `https://archiveofourown.org/works/${workId}?show_comments=true&view_full_work=true&page=${page}`
+  const url = `https://archiveofourown.org/works/${workId}?show_comments=true&view_full_work=true&view_adult=true&page=${page}`
 
   try {
     const html = await request(url, requestOptions)
-    const result = parseCommentList(html)
+    const result = parseCommentList(html, workId)
 
     // Set workId for all comments since it might not be available in the HTML
     const setWorkId = (comments: Comment[]): Comment[] => {
@@ -65,11 +65,11 @@ export async function getChapterComments(
   page: number = 1,
   requestOptions?: RequestOptions
 ): Promise<CommentResults> {
-  const url = `https://archiveofourown.org/chapters/${chapterId}?show_comments=true&page=${page}`
+  const url = `https://archiveofourown.org/chapters/${chapterId}?show_comments=true&view_adult=true&page=${page}`
 
   try {
     const html = await request(url, requestOptions)
-    const result = parseCommentList(html)
+    const result = parseCommentList(html, workId)
 
     // Set workId and chapterId for all comments
     const setIds = (comments: Comment[]): Comment[] => {

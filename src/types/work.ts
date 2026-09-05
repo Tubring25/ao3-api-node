@@ -122,6 +122,7 @@ export interface WorkSearchResult {
  * Individual chapter information
  */
 export interface Chapter {
+  /** Standalone works use their work ID; pass it unchanged to getChapterContent. */
   id: string;
   title: string;
 }

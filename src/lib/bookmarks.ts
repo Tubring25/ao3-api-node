@@ -20,7 +20,7 @@ export async function getUserBookmarks(
   page: number = 1,
   requestOptions?: RequestOptions
 ): Promise<BookmarkResults> {
-  const url = `https://archiveofourown.org/users/${username}/bookmarks?page=${page}`
+  const url = `https://archiveofourown.org/users/${encodeURIComponent(username)}/bookmarks?page=${page}`
 
   try {
     const html = await request(url, requestOptions)

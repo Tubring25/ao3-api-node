@@ -164,18 +164,30 @@ async function getChapterContent(
   chapterId: string,
   options?: RequestOptions
 ): Promise<ChapterContent> {
-  const url = `https://archiveofourown.org/works/${workId}/chapters/${chapterId}?view_adult=true`
+  const chapterUrl = `https://archiveofourown.org/works/${workId}/chapters/${chapterId}?view_adult=true`
+  // getChapters represents a standalone work with its work ID.
+  const url = chapterId === workId
+    ? `https://archiveofourown.org/works/${workId}?view_adult=true`
+    : chapterUrl
   try {
     const html = await request(url, options)
-    const $ = cheerio.load(html)
+    let $ = cheerio.load(html)
+
+    // Work and chapter IDs can coincide for a chaptered work.
+    if (chapterId === workId && $('#chapter_index select option').length) {
+      $ = cheerio.load(await request(chapterUrl, options))
+    }
 
     // check authentation limited
     if ($('#loginform form#new_user').length > 0) {
       throw new AuthenticationRequiredError(workId)
     }
 
-    // check content not found
-    if (!$('div.userstuff[role="article"]').length) {
+    const standaloneContent = $('#chapters > div.userstuff')
+    const isStandalone = standaloneContent.length > 0 && $('h2.title.heading').length > 0
+    const content = isStandalone ? standaloneContent : $('div.userstuff[role="article"]')
+
+    if (!content.length) {
       throw new AO3Error(
         `Invalid chapter page for chapter ID: ${chapterId}`
       )
@@ -189,11 +201,11 @@ async function getChapterContent(
     const chapterData: ChapterContent = {
       workId,
       chapterId,
-      title: $('h3.title').text().trim(),
-      summary: getUserstuffHtml('#summary'),
-      notes: getUserstuffHtml('div#notes'),
-      content: $('div.userstuff[role="article"]').html() || '',
-      endNotes: getUserstuffHtml('div.end.notes')
+      title: $(isStandalone ? 'h2.title.heading' : 'h3.title').first().text().trim(),
+      summary: getUserstuffHtml(isStandalone ? '#workskin > .preface .summary' : '#summary'),
+      notes: getUserstuffHtml(isStandalone ? '#workskin > .preface .notes' : 'div#notes'),
+      content: content.first().html() || '',
+      endNotes: getUserstuffHtml(isStandalone ? '#work_endnotes' : 'div.end.notes')
     }
 
     return chapterData

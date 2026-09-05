@@ -16,13 +16,17 @@ async function getUserProfile(username: string, requestOptions?: RequestOptions)
     const html = await request(url, requestOptions)
     const $ = cheerio.load(html)
 
+    if (!$('#main.profile-show .user.profile').length || !$('.user.profile h2.heading').first().text().trim()) {
+      throw new AO3Error(`Invalid profile page for user: ${username}`)
+    }
+
     const meta = $('dl.meta')
 
     const getMetaText = (label: string) => meta.find(`dt:contains("${label}")`).next('dd').text().trim()
     const bio = $('.bio.module .userstuff')
 
     return {
-      username: $('h2.heading').text().trim(),
+      username: $('.user.profile h2.heading').first().text().trim(),
       userId: getMetaText('My user ID is:'),
       joined: getMetaText('I joined on:'),
       bioHtml: bio.length > 0 ? bio.html() : null

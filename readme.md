@@ -9,6 +9,8 @@ Inspired by [ao3_api](https://github.com/wendytg/ao3_api).
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Request Options and Pagination](#request-options-and-pagination)
+- [Export Public Bookmarks](#export-public-bookmarks)
 - [API Reference](#api-reference)
   - [Works](#works)
     - [`getWork`](#getwork)
@@ -39,7 +41,7 @@ Inspired by [ao3_api](https://github.com/wendytg/ao3_api).
 - [License](#license)
 
 ## Installation
-Node.js 20 or later is required.
+Node.js 20.18.1 or later is required. This package uses ESM imports.
 ```bash
 npm i ao3-api-nodejs
 ```
@@ -69,6 +71,66 @@ This is an unofficial API and is not affiliated with the Organization for Transf
 
 The package only fetches publicly available data. It does not support authentication, cookies, or authentication-restricted works. Requests for restricted works throw `AuthenticationRequiredError`.
 
+## Request Options and Pagination
+
+All request functions accept `RequestOptions`:
+
+| Option | Purpose |
+| --- | --- |
+| `proxyUrl` | Optional HTTP proxy URL. Keep credentials outside source code. |
+| `timeoutMs` | Timeout in milliseconds for each request attempt. |
+| `signal` | An `AbortSignal` for cancelling an in-flight request. |
+
+```typescript
+import { getWork, WorkNotFoundError, AuthenticationRequiredError, AO3Error } from 'ao3-api-nodejs'
+
+try {
+  const work = await getWork('35961484', {
+    timeoutMs: 30_000,
+    signal: AbortSignal.timeout(60_000),
+    proxyUrl: process.env.AO3_PROXY_URL
+  })
+  console.log(work.title)
+} catch (error) {
+  if (error instanceof WorkNotFoundError) console.error('Work not found.')
+  else if (error instanceof AuthenticationRequiredError) console.error('This work requires login.')
+  else if (error instanceof AO3Error) console.error(error.message, error.statusCode)
+  else throw error // Transport, timeout and cancellation errors retain their original types.
+}
+```
+
+`iteratePages(fetchPage, { startPage?, maxPages? })` fetches pages sequentially and stops at the last page or the supplied page limit. It does not impose a request interval. Add a delay inside the callback when reading multiple pages:
+
+```typescript
+import { setTimeout as delay } from 'node:timers/promises'
+import { getUserWorks, iteratePages } from 'ao3-api-nodejs'
+
+const signal = AbortSignal.timeout(120_000)
+for await (const result of iteratePages(async page => {
+  if (page > 1) await delay(3000, undefined, { signal })
+  return getUserWorks('TheHomelyBadger', page, { timeoutMs: 30_000, signal })
+}, { maxPages: 5 })) {
+  console.log(result.works)
+}
+```
+
+The delay is an example, not a guaranteed safe AO3 request rate. The request layer retries selected transient HTTP failures up to twice. Avoid repeatedly restarting a failed export or running multiple exports concurrently.
+
+## Export Public Bookmarks
+
+From a checkout of this repository:
+
+```bash
+pnpm install
+pnpm run build
+node examples/export-bookmarks.mjs TheHomelyBadger bookmarks.json 10 3000
+# Or use bookmarks.csv as the output filename.
+```
+
+The [export example](examples/export-bookmarks.mjs) exports public bookmarks of AO3 works. The last two arguments set the page limit (default `10`) and delay between pages in milliseconds (default `3000`). Press Ctrl+C to cancel. Existing output files are never overwritten, and fetching must succeed before an output file is written.
+
+JSON includes the available bookmark and work fields, page counts, and a `truncated` flag. CSV includes bookmark ID, work ID, title, first author, work URL, bookmark date, notes and bookmarker's tags; cells that could be read as formulas are prefixed with an apostrophe. Both formats report when the page limit produces a partial export and how many bookmarks were skipped. Series, external works and unavailable items are skipped because the current model does not provide an AO3 work ID for them. Private bookmarks are not accessible.
+
 ## API Reference
 ### Works
 
@@ -89,7 +151,7 @@ console.log(work.tags.rating); // 'Teen And Up Audiences'
 ```
 
 #### `getChapters`
-Get the list of chapters info for a work. If the work has only one chapter, it returns a single row representing the work itself.
+Get the list of chapters info for a work. If the work has only one chapter, it returns a single row representing the work itself, with `id` equal to the work ID. Pass that ID unchanged to `getChapterContent`.
 
 **Signature:** `getChapters(workId: string, requestOptions?: RequestOptions): Promise<Chapter[]>`
 
@@ -102,6 +164,7 @@ console.log(chaptersList[0]) // { id: '89650822', title: 'Chapter 1' }
 
 #### `getChapterContent`
 Get the meta data and content for a single chapter.
+For standalone works, pass the ID returned by `getChapters`; the result contains the work title, summary, notes, body and end notes. Content and notes are HTML strings.
 
 **Signature:** `getChapterContent(workId: string, chapterId: string, requestOptions?: RequestOptions): Promise<ChapterContent>`
 
@@ -110,6 +173,17 @@ Get the meta data and content for a single chapter.
 import { getChapterContent } from 'ao3-api-nodejs'
 const content = await getChapterContent(workId, chapterId)
 console.log(content.notes) // '<p>Probably not the sequel you were expecting, sorry :)</p>'
+```
+
+The same flow works for standalone and chaptered works:
+
+```typescript
+import { getChapters, getChapterContent } from 'ao3-api-nodejs'
+
+const workId = '57038482'
+const [chapter] = await getChapters(workId)
+const content = await getChapterContent(workId, chapter.id)
+console.log(content.title)
 ```
 
 #### `getWorkDownloadLinks`
@@ -267,6 +341,7 @@ console.log(`Found ${results.totalResults} works by TheHomelyBadger.`); // Found
 #### `getUserBookmarks`
 Get a paginated list of a user's public bookmarks.
 The embedded `work.author` contains the first author, while `work.authors` contains all authors.
+`bookmark.tags`, `bookmark.notes` and `bookmark.created` describe the bookmarker's additions and bookmark date, rather than the work's tags or update date.
 
 **Signature:** `getUserBookmarks(username: string, page: number = 1, requestOptions?: RequestOptions): Promise<BookmarkResults>`
 
@@ -286,6 +361,7 @@ Get the public bookmarks for a work. `bookmark.id` is `null` when AO3 does not e
 
 #### `getWorkComments`
 Get paginated comments for a complete work, organized into reply threads.
+Public adult works are supported. Login-required works throw `AuthenticationRequiredError`; unexpected pages throw `AO3Error` instead of returning an empty comment list.
 
 **Signature:** `getWorkComments(workId: string, page: number = 1, requestOptions?: RequestOptions): Promise<CommentResults>`
 
@@ -304,6 +380,7 @@ Get all comments for a work.
 ### Errors
 
 HTTP response failures use `AO3Error`.
+Unexpected work listing, profile, series, user bookmark and comment pages also throw `AO3Error`. Legitimate empty result pages still return empty lists. Network, timeout and cancellation errors retain their original transport error types.
 Missing resources use:
 - `WorkNotFoundError`
 - `UserNotFoundError`

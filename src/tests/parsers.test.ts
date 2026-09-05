@@ -1,8 +1,38 @@
 import { describe, it, expect } from 'vitest'
 import { parseWorkList, parseWorkBlurb } from '../lib/parsers.js'
 import * as cheerio from 'cheerio'
+import { AO3Error } from '../types/index.js'
 
 describe('parseWorkList', () => {
+  it.each([
+    ['1 Work by Example', 1],
+    ['1 Work in Book of 20 Works', 1],
+    ['2 Works in Example', 2],
+    ['1 - 20 of 1,234 Works in Example', 1234],
+    ['1 Found', 1]
+  ])('parses the total from %s', (heading, total) => {
+    const result = parseWorkList(`<h2 class="heading">${heading}</h2><ol class="work index"><li class="work" id="work_1"><h4 class="heading"><a href="/works/1">Example</a></h4></li></ol>`)
+    expect(result.totalResults).toBe(total)
+    expect(result.works[0].id).toBe('1')
+  })
+
+  it.each(['0 Works by Example', '0 Found'])('allows %s without a list element', heading => {
+    expect(parseWorkList(`<h2 class="heading">${heading}</h2>`).works).toEqual([])
+  })
+
+  it.each([
+    '<h2 class="heading">Search Results</h2>',
+    '<h2 class="heading">1 Found</h2>',
+    '<ol class="work index"></ol>'
+  ])('rejects incomplete result markup', html => {
+    expect(() => parseWorkList(html)).toThrow(AO3Error)
+  })
+
+  it('accepts the count-free empty search page used by AO3', () => {
+    const result = parseWorkList('<div id="main" class="works-search region"><h2 class="heading">Search Results</h2><p>No results found. You may want to edit your search to make it less specific.</p></div>')
+    expect(result).toEqual({ works: [], totalResults: 0, page: 1, totalPages: 1 })
+  })
+
   it('should handle HTML with "of X Works" format', () => {
     const html = `
       <html>

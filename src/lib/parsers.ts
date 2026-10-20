@@ -315,17 +315,22 @@ function parseComment(
   const chapterMatch = commentElement.find('a[href*="/chapters/"]').attr('href')?.match(/\/chapters\/(\d+)/)
   const chapterId = chapterMatch?.[1] || undefined
 
-  const authorElement = commentElement.find('.byline a').first()
-  const author = authorElement.text().trim()
-  // Registered commenters link to /users/<login>/pseuds/<pseud>.
-  const authorId = authorElement.attr('href')?.match(/\/users\/([^/?#]+)/)?.[1] || undefined
-  const isAuthorGuest = authorElement.hasClass('guest')
+  // Registered commenters link to /users/<login>/pseuds/<pseud>; guests are a
+  // plain name followed by a "(Guest)" role. The byline also links the chapter.
+  const byline = commentElement.find('.byline').first()
+  const authorLink = byline.children('a[href*="/users/"]').first()
+  const guestName = byline.children('span').not('.role, .parent, .datetime').first()
+  const author = (authorLink.length ? authorLink : guestName).text().trim()
+  const authorId = authorLink.attr('href')?.match(/\/users\/([^/?#]+)/)?.[1] || undefined
+  const isAuthorGuest = commentElement.hasClass('guest') || byline.children('.role').length > 0
 
   const directContent = commentElement.children('.userstuff').first()
   const legacyContent = commentElement.children('.comment').first().find('.userstuff').first()
   const content = (directContent.length ? directContent : legacyContent).html() || ''
-  const posted = commentElement.find('.datetime').text().trim()
-  const edited = commentElement.find('.edited').text().trim() || undefined
+  const datetime = commentElement.find('.posted.datetime').first()
+  const posted = (datetime.length ? datetime : commentElement.find('.datetime').first())
+    .text().trim().replace(/\s+/g, ' ')
+  const edited = commentElement.find('.edited').first().text().trim().replace(/\s+/g, ' ') || undefined
 
   const actionLinks = commentElement.find('ul.actions a')
   const actionCommentId = (label: string): string | undefined => {

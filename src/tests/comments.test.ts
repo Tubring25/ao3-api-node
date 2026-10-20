@@ -2,6 +2,7 @@ import { describe, vi, expect, afterEach, it } from "vitest";
 import { promises as fs } from "fs";
 import path from "path";
 import { getWorkComments, getChapterComments, getAllWorkComments } from "../index.js";
+import { flattenCommentThreads } from "../lib/commentThreads.js";
 import { gotScraping } from "got-scraping";
 import { ChapterNotFoundError, WorkNotFoundError } from "../types/index.js";
 
@@ -37,6 +38,11 @@ vi.mock('got-scraping', () => ({
           </body>
         </html>
       `
+      return { statusCode: 200, body: mockHtml }
+    }
+    else if(options.url.includes('/works/35961484?show_comments=true')) {
+      const mockHtmlPath = path.join(__dirname, '../fixtures', 'comments-35961484.html')
+      const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
       return { statusCode: 200, body: mockHtml }
     }
     else if(options.url.includes('/works/123456?show_comments=true')) {
@@ -76,6 +82,44 @@ afterEach(() => {
 })
 
 describe('getWorkComments', () => {
+  it('should parse a saved AO3 comments page', async () => {
+    const result = await getWorkComments('35961484')
+    const comments = flattenCommentThreads(result.comments)
+    const find = (id: string) => comments.find(comment => comment.id === id)
+
+    expect(result).toEqual(expect.objectContaining({ total: 163, page: 1, totalPages: 6 }))
+    expect(result.comments).toHaveLength(20)
+    expect(comments).toHaveLength(40)
+
+    expect(find('495948310')).toEqual(expect.objectContaining({
+      workId: '35961484',
+      chapterId: '89650822',
+      author: 'thegadgetfish',
+      authorId: 'thegadgetfish',
+      isAuthorGuest: false,
+      posted: 'Sun 26 Dec 2021 12:44AM UTC',
+      depth: 0
+    }))
+    expect(find('495948310')?.content).toContain('these baby gays are so cute LOL')
+    expect(find('495955027')).toEqual(expect.objectContaining({
+      author: 'AmberZ10',
+      parentId: '495948310',
+      threadId: '495948310',
+      depth: 1
+    }))
+  })
+
+  it('should parse guest commenters from a saved AO3 comments page', async () => {
+    const result = await getWorkComments('35961484')
+    const guest = flattenCommentThreads(result.comments).find(comment => comment.id === '495973798')
+
+    expect(guest).toEqual(expect.objectContaining({
+      author: 'Ar',
+      authorId: undefined,
+      isAuthorGuest: true
+    }))
+  })
+
   it('should return work comments with correct structure', async () => {
     const result = await getWorkComments('123456')
 

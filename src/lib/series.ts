@@ -10,7 +10,7 @@ import { request } from './request.js';
  * @returns A promise that resolves to a series object
  */
 async function getSeries(seriesId: string, requestOptions?: RequestOptions): Promise<Series> {
-  const url = `https://archiveofourown.org/series/${seriesId}`
+  const url = `https://archiveofourown.org/series/${encodeURIComponent(seriesId)}`
 
   try {
     const html = await request(url, requestOptions)

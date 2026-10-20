@@ -113,6 +113,7 @@ export interface WorkSearchResult {
   bookmarks: number;
   complete: boolean;
   fandoms: string[];
+  tags: WorkTags;
   words: number;
   kudos: number;
   hits: number;

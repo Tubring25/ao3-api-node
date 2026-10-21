@@ -1,3 +1,4 @@
+import { setTimeout as delay } from 'node:timers/promises'
 
 export interface PaginationResult {
   page: number
@@ -7,6 +8,10 @@ export interface PaginationResult {
 export interface IteratePagesOptions {
   startPage?: number
   maxPages?: number
+  /** Milliseconds to wait before each page after the first. Defaults to 0. */
+  delayMs?: number
+  /** Cancels a pending delay between pages. */
+  signal?: AbortSignal
 }
 
 export const iteratePages = async function*<T extends PaginationResult>(
@@ -17,6 +22,9 @@ export const iteratePages = async function*<T extends PaginationResult>(
   let fetchedPages = 0
 
   while (options?.maxPages === undefined || fetchedPages < options.maxPages) {
+    if (fetchedPages > 0 && options?.delayMs) {
+      await delay(options.delayMs, undefined, { signal: options.signal })
+    }
     const result = await fetchPage(page)
     yield result
     fetchedPages++

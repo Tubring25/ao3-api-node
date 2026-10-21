@@ -213,7 +213,7 @@ describe('getChapterComments', () => {
 
 describe('getAllWorkComments', () => {
   it('should get all comments in multiple pages', async () => {
-    const result = await getAllWorkComments('654321')
+    const result = await getAllWorkComments('654321', undefined, { delayMs: 0 })
 
     expect(result.total).toBe(2)
     expect(result.totalPages).toBe(2)
@@ -229,5 +229,23 @@ describe('getAllWorkComments', () => {
       return new URL((options as { url: string }).url).searchParams.get('page')
     })
     expect(requestedPages).toEqual(['1', '2'])
+    expect(result.fetchedPages).toBe(2)
+  })
+
+  it('should stop after maxPages and report the fetched page count', async () => {
+    const result = await getAllWorkComments('654321', undefined, { maxPages: 1 })
+
+    expect(gotScraping).toHaveBeenCalledTimes(1)
+    expect(result.comments.map(comment => comment.id)).toEqual(['100'])
+    expect(result.totalPages).toBe(2)
+    expect(result.fetchedPages).toBe(1)
+  })
+
+  it('should wait one second between comment pages by default', async () => {
+    const startedAt = Date.now()
+
+    await getAllWorkComments('654321')
+
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(950)
   })
 })

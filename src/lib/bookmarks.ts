@@ -1,7 +1,6 @@
-import { request } from './request.js'
+import { requestResource } from './requestResource.js'
 import { parseBookmarkList, parseWorkBookmarkList } from './parsers.js'
 import {
-  AO3Error,
   RequestOptions,
   BookmarkResults,
   UserNotFoundError,
@@ -22,15 +21,8 @@ export async function getUserBookmarks(
 ): Promise<BookmarkResults> {
   const url = `https://archiveofourown.org/users/${encodeURIComponent(username)}/bookmarks?page=${page}`
 
-  try {
-    const html = await request(url, requestOptions)
-    return parseBookmarkList(html)
-  } catch (error) {
-    if (error instanceof AO3Error && error.statusCode === 404) {
-      throw new UserNotFoundError(username)
-    }
-    throw error
-  }
+  const html = await requestResource(url, requestOptions, () => new UserNotFoundError(username))
+  return parseBookmarkList(html)
 }
 
 /**
@@ -47,13 +39,6 @@ export async function getWorkBookmarks(
 ): Promise<BookmarkResults> {
   const url = `https://archiveofourown.org/works/${encodeURIComponent(workId)}/bookmarks?page=${page}`
 
-  try {
-    const html = await request(url, requestOptions)
-    return parseWorkBookmarkList(html)
-  } catch (error) {
-    if (error instanceof AO3Error && error.statusCode === 404) {
-      throw new WorkNotFoundError(workId)
-    }
-    throw error
-  }
+  const html = await requestResource(url, requestOptions, () => new WorkNotFoundError(workId))
+  return parseWorkBookmarkList(html)
 }

@@ -90,4 +90,38 @@ describe('iteratePages', () => {
     expect(fetchPage).toHaveBeenCalledTimes(1)
     expect(fetchPage.mock.calls.map(([page]) => page)).toEqual([1])
   })
+
+  it('waits between pages but not before the first page', async () => {
+    const requestedAt: number[] = []
+    const fetchPage = async (page: number): Promise<TestPage> => {
+      requestedAt.push(Date.now())
+      return { works: [], page, totalPages: 3 }
+    }
+    const startedAt = Date.now()
+
+    for await (const _page of iteratePages(fetchPage, { delayMs: 50 })) {
+      // consume every page
+    }
+
+    expect(requestedAt).toHaveLength(3)
+    expect(requestedAt[0] - startedAt).toBeLessThan(40)
+    expect(requestedAt[1] - requestedAt[0]).toBeGreaterThanOrEqual(45)
+    expect(requestedAt[2] - requestedAt[1]).toBeGreaterThanOrEqual(45)
+  })
+
+  it('stops a pending delay when the signal aborts', async () => {
+    const controller = new AbortController()
+    const fetchPage = vi.fn(async (page: number): Promise<TestPage> => {
+      return { works: [], page, totalPages: 3 }
+    })
+
+    const iterate = async () => {
+      for await (const _page of iteratePages(fetchPage, { delayMs: 10_000, signal: controller.signal })) {
+        controller.abort()
+      }
+    }
+
+    await expect(iterate()).rejects.toMatchObject({ name: 'AbortError' })
+    expect(fetchPage).toHaveBeenCalledTimes(1)
+  })
 })

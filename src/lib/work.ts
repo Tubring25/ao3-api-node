@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio';
 
 import { AO3Error, AuthenticationRequiredError, Chapter, ChapterContent, ChapterNotFoundError, RequestOptions, Work, WorkNotFoundError, WorkDownloadLink } from "../types/index.js";
-import { request } from './request.js';
+import { requestResource } from './requestResource.js'
+import { parseRating } from './constants.js'
 
 /**
  * Get a work by ID
@@ -11,103 +12,95 @@ import { request } from './request.js';
 async function getWork(workId: string, options?: RequestOptions): Promise<Work> {
   const url = `https://archiveofourown.org/works/${encodeURIComponent(workId)}?view_adult=true`
 
-  try {
-    const html = await request(url, options)
-    const $ = cheerio.load(html)
+  const html = await requestResource(url, options, () => new WorkNotFoundError(workId))
+  const $ = cheerio.load(html)
 
-    // check if login limited
-    if ($('#loginform form#new_user').length > 0) {
-      throw new AuthenticationRequiredError(workId)
-    }
-
-    // check if the work exists
-    if (!$('h2.title.heading').length) {
-      throw new AO3Error(`Invalid work page for work ID: ${workId}`)
-    }
-
-    // extract work details
-    const statsNode = $('dl.stats')
-    const chaptersText = statsNode.find('dd.chapters').text()
-    const [postedChapters, totalChapters] = chaptersText.split('/').map(s => s.trim())
-
-    const authors = $('a[rel="author"]').map((_, el) => $(el).text().trim()).get()
-    // anonymous author
-    if (authors.length === 0) {
-      const anonymousAuthor = $(
-          '#workskin > .preface.group > h3.byline.heading'
-        ).first().text().trim()
-      anonymousAuthor && authors.push(anonymousAuthor)
-    }
-
-    // series info
-    const series: Work['series'] = []
-    $('dd.series span.position').each((_, el) => {
-      const positionElement = $(el)
-      const seriesLink = positionElement.find('a[href^="/series/"]').first()
-
-      const href = seriesLink.attr('href')
-      const id = href?.match(/\/series\/(\d+)/)?.[1]
-      const title = seriesLink.text().trim()
-      const positionMatch = positionElement.text().match(/Part\s+(\d+)\s+of/i)
-
-      if (!id || !title || !positionMatch) return
-
-      series.push({id, title, position: parseInt(positionMatch[1], 10)})
-    })
-
-    // collections info
-    const collections: Work['collections'] = []
-    $('dd.collections a[href^="/collections/"]').each((_, el) => {
-      const collectionLink = $(el)
-      const href = collectionLink.attr('href')
-      const name = href?.match(/\/collections\/([^/?#]+)/)?.[1]
-      const title = collectionLink.text()
-
-      if (!name || !title) return
-      collections.push({name, title})
-    })
-
-    const workData: Work = {
-      id: workId,
-      title: $('h2.title.heading').text().trim(),
-      author: authors[0] ?? '',
-      authors: authors,
-      summary: $('.summary .userstuff').html() || '',
-      language: $('dd.language').text().trim(),
-      stats: {
-        published: statsNode.find('dd.published').text().trim(),
-        updated: statsNode.find('dd.status').text().trim() || undefined,
-        words: parseInt(statsNode.find('dd.words').text().replace(/,/g, ''), 10) || 0,
-        chapters: {
-          posted: parseInt(postedChapters, 10) || 0,
-          total: totalChapters === '?' ? null : parseInt(totalChapters, 10)
-        },
-        hits: parseInt(statsNode.find('dd.hits').text().replace(/,/g, ''), 10) || 0,
-        comments: parseInt(statsNode.find('dd.comments').text().replace(/,/g, ''), 10) || 0,
-        bookmarks: parseInt(statsNode.find('dd.bookmarks').text().replace(/,/g, ''), 10) || 0,
-        kudos: parseInt(statsNode.find('dd.kudos').text().replace(/,/g, ''), 10) || 0,
-      },
-      tags: {
-        rating: $('dd.rating a.tag').text().trim().replace(/\s+/g, ' '),
-        warnings: $('dd.warning a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-        category: $('dd.category a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-        fandoms: $('dd.fandom a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-        relationships: $('dd.relationship a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-        characters: $('dd.character a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
-        freeforms: $('dd.freeform a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get()
-      },
-      series,
-      collections,
-    }
-
-    return workData
-  } catch (error) {
-    if (error instanceof AO3Error && error.statusCode === 404) {
-      throw new WorkNotFoundError(workId)
-    }
-
-    throw error
+  // check if login limited
+  if ($('#loginform form#new_user').length > 0) {
+    throw new AuthenticationRequiredError(workId)
   }
+
+  // check if the work exists
+  if (!$('h2.title.heading').length) {
+    throw new AO3Error(`Invalid work page for work ID: ${workId}`)
+  }
+
+  // extract work details
+  const statsNode = $('dl.stats')
+  const chaptersText = statsNode.find('dd.chapters').text()
+  const [postedChapters, totalChapters] = chaptersText.split('/').map(s => s.trim())
+
+  const authors = $('a[rel="author"]').map((_, el) => $(el).text().trim()).get()
+  // anonymous author
+  if (authors.length === 0) {
+    const anonymousAuthor = $(
+        '#workskin > .preface.group > h3.byline.heading'
+      ).first().text().trim()
+    anonymousAuthor && authors.push(anonymousAuthor)
+  }
+
+  // series info
+  const series: Work['series'] = []
+  $('dd.series span.position').each((_, el) => {
+    const positionElement = $(el)
+    const seriesLink = positionElement.find('a[href^="/series/"]').first()
+
+    const href = seriesLink.attr('href')
+    const id = href?.match(/\/series\/(\d+)/)?.[1]
+    const title = seriesLink.text().trim()
+    const positionMatch = positionElement.text().match(/Part\s+(\d+)\s+of/i)
+
+    if (!id || !title || !positionMatch) return
+
+    series.push({id, title, position: parseInt(positionMatch[1], 10)})
+  })
+
+  // collections info
+  const collections: Work['collections'] = []
+  $('dd.collections a[href^="/collections/"]').each((_, el) => {
+    const collectionLink = $(el)
+    const href = collectionLink.attr('href')
+    const name = href?.match(/\/collections\/([^/?#]+)/)?.[1]
+    const title = collectionLink.text()
+
+    if (!name || !title) return
+    collections.push({name, title})
+  })
+
+  const workData: Work = {
+    id: workId,
+    title: $('h2.title.heading').text().trim(),
+    author: authors[0] ?? '',
+    authors: authors,
+    summary: $('.summary .userstuff').html() || '',
+    language: $('dd.language').text().trim(),
+    stats: {
+      published: statsNode.find('dd.published').text().trim(),
+      updated: statsNode.find('dd.status').text().trim() || undefined,
+      words: parseInt(statsNode.find('dd.words').text().replace(/,/g, ''), 10) || 0,
+      chapters: {
+        posted: parseInt(postedChapters, 10) || 0,
+        total: totalChapters === '?' ? null : parseInt(totalChapters, 10)
+      },
+      hits: parseInt(statsNode.find('dd.hits').text().replace(/,/g, ''), 10) || 0,
+      comments: parseInt(statsNode.find('dd.comments').text().replace(/,/g, ''), 10) || 0,
+      bookmarks: parseInt(statsNode.find('dd.bookmarks').text().replace(/,/g, ''), 10) || 0,
+      kudos: parseInt(statsNode.find('dd.kudos').text().replace(/,/g, ''), 10) || 0,
+    },
+    tags: {
+      rating: parseRating($('dd.rating a.tag').text().trim().replace(/\s+/g, ' ')),
+      warnings: $('dd.warning a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      category: $('dd.category a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      fandoms: $('dd.fandom a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      relationships: $('dd.relationship a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      characters: $('dd.character a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get(),
+      freeforms: $('dd.freeform a.tag').map((i, el) => $(el).text().trim().replace(/\s+/g, ' ')).get()
+    },
+    series,
+    collections,
+  }
+
+  return workData
 }
 
 /**
@@ -117,39 +110,31 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
  */
 async function getChapters(workId: string, options?: RequestOptions): Promise<Chapter[]> {
   const url = `https://archiveofourown.org/works/${encodeURIComponent(workId)}?view_adult=true`
-  try {
-    const html = await request(url, options)
-    const $ = cheerio.load(html)
+  const html = await requestResource(url, options, () => new WorkNotFoundError(workId))
+  const $ = cheerio.load(html)
 
-    // check if login limited
-    if ($('#loginform form#new_user').length > 0) {
-      throw new AuthenticationRequiredError(workId)
-    }
+  // check if login limited
+  if ($('#loginform form#new_user').length > 0) {
+    throw new AuthenticationRequiredError(workId)
+  }
 
-    // check if the work exists
-    if (!$('h2.title.heading').length) {
-      throw new AO3Error(`Invalid work page for work ID: ${workId}`)
-    }
+  // check if the work exists
+  if (!$('h2.title.heading').length) {
+    throw new AO3Error(`Invalid work page for work ID: ${workId}`)
+  }
 
-    const chapterOptions = $('#chapter_index select option')
+  const chapterOptions = $('#chapter_index select option')
 
-    if (chapterOptions.length > 0) {
-      return chapterOptions.map((i, el) => ({
-        id: $(el).attr('value') || '',
-        title: $(el).text().replace(/^\d+\.\s*/, '').trim(),
-      })).get()
-    } else {
-      return [{
-        id: workId,
-        title: $('h2.title.heading').text().trim(),
-      }]
-    }
-  } catch (error) {
-    if (error instanceof AO3Error && error.statusCode === 404) {
-      throw new WorkNotFoundError(workId)
-    }
-
-    throw error
+  if (chapterOptions.length > 0) {
+    return chapterOptions.map((i, el) => ({
+      id: $(el).attr('value') || '',
+      title: $(el).text().replace(/^\d+\.\s*/, '').trim(),
+    })).get()
+  } else {
+    return [{
+      id: workId,
+      title: $('h2.title.heading').text().trim(),
+    }]
   }
 }
 
@@ -169,94 +154,78 @@ async function getChapterContent(
   const url = chapterId === workId
     ? `https://archiveofourown.org/works/${encodeURIComponent(workId)}?view_adult=true`
     : chapterUrl
-  try {
-    const html = await request(url, options)
-    let $ = cheerio.load(html)
+  const html = await requestResource(url, options, () => new ChapterNotFoundError(workId, chapterId))
+  let $ = cheerio.load(html)
 
-    // Work and chapter IDs can coincide for a chaptered work.
-    if (chapterId === workId && $('#chapter_index select option').length) {
-      $ = cheerio.load(await request(chapterUrl, options))
-    }
-
-    // check authentation limited
-    if ($('#loginform form#new_user').length > 0) {
-      throw new AuthenticationRequiredError(workId)
-    }
-
-    const standaloneContent = $('#chapters > div.userstuff')
-    const isStandalone = standaloneContent.length > 0 && $('h2.title.heading').length > 0
-    const content = isStandalone ? standaloneContent : $('div.userstuff[role="article"]')
-
-    if (!content.length) {
-      throw new AO3Error(
-        `Invalid chapter page for chapter ID: ${chapterId}`
-      )
-    }
-
-    const getUserstuffHtml = (selector: string): string | null => {
-      const el = $(selector).find('blockquote.userstuff')
-      return el.length > 0 ? el.html() : null
-    }
-
-    const chapterData: ChapterContent = {
-      workId,
-      chapterId,
-      title: $(isStandalone ? 'h2.title.heading' : 'h3.title').first().text().trim(),
-      summary: getUserstuffHtml(isStandalone ? '#workskin > .preface .summary' : '#summary'),
-      notes: getUserstuffHtml(isStandalone ? '#workskin > .preface .notes' : 'div#notes'),
-      content: content.first().html() || '',
-      endNotes: getUserstuffHtml(isStandalone ? '#work_endnotes' : 'div.end.notes')
-    }
-
-    return chapterData
-  } catch (error) {
-    if (error instanceof AO3Error && error.statusCode === 404) {
-      throw new ChapterNotFoundError(workId, chapterId)
-    }
-
-    throw error
+  // Work and chapter IDs can coincide for a chaptered work.
+  if (chapterId === workId && $('#chapter_index select option').length) {
+    $ = cheerio.load(await requestResource(chapterUrl, options, () => new ChapterNotFoundError(workId, chapterId)))
   }
+
+  // check authentation limited
+  if ($('#loginform form#new_user').length > 0) {
+    throw new AuthenticationRequiredError(workId)
+  }
+
+  const standaloneContent = $('#chapters > div.userstuff')
+  const isStandalone = standaloneContent.length > 0 && $('h2.title.heading').length > 0
+  const content = isStandalone ? standaloneContent : $('div.userstuff[role="article"]')
+
+  if (!content.length) {
+    throw new AO3Error(
+      `Invalid chapter page for chapter ID: ${chapterId}`
+    )
+  }
+
+  const getUserstuffHtml = (selector: string): string | null => {
+    const el = $(selector).find('blockquote.userstuff')
+    return el.length > 0 ? el.html() : null
+  }
+
+  const chapterData: ChapterContent = {
+    workId,
+    chapterId,
+    title: $(isStandalone ? 'h2.title.heading' : 'h3.title').first().text().trim(),
+    summary: getUserstuffHtml(isStandalone ? '#workskin > .preface .summary' : '#summary'),
+    notes: getUserstuffHtml(isStandalone ? '#workskin > .preface .notes' : 'div#notes'),
+    content: content.first().html() || '',
+    endNotes: getUserstuffHtml(isStandalone ? '#work_endnotes' : 'div.end.notes')
+  }
+
+  return chapterData
 }
 
 async function getWorkDownloadLinks(workId: string, options?: RequestOptions): Promise<WorkDownloadLink[]> {
   const url = `https://archiveofourown.org/works/${encodeURIComponent(workId)}?view_adult=true`
 
-  try {
-    const html = await request(url, options)
-    const $ = cheerio.load(html)
+  const html = await requestResource(url, options, () => new WorkNotFoundError(workId))
+  const $ = cheerio.load(html)
 
-    // check if login limited
-    if ($('#loginform form#new_user').length > 0) {
-      throw new AuthenticationRequiredError(workId)
-    }
-
-    // check if the work exists
-    if (!$('h2.title.heading').length) {
-      throw new AO3Error(`Invalid work page for work ID: ${workId}`)
-    }
-
-    const downloadLinks: WorkDownloadLink[] = []
-
-    $('li.download a[href*="/downloads/"]').each((_, el) => {
-      const href = $(el).attr('href')
-      if (!href) return
-
-      const downloadUrl = new URL(href, 'https://archiveofourown.org')
-      const format = downloadUrl.pathname.split('.').pop()?.toUpperCase()
-      if (format === 'HTML' || format === 'EPUB' || format === 'PDF' || format === 'MOBI' || format === 'AZW3') {
-        downloadLinks.push({ format, url: downloadUrl.toString() })
-      }
-    })
-
-    return downloadLinks
-
-  } catch (error) {
-    if (error instanceof AO3Error && error.statusCode === 404) {
-      throw new WorkNotFoundError(workId)
-    }
-
-    throw error
+  // check if login limited
+  if ($('#loginform form#new_user').length > 0) {
+    throw new AuthenticationRequiredError(workId)
   }
+
+  // check if the work exists
+  if (!$('h2.title.heading').length) {
+    throw new AO3Error(`Invalid work page for work ID: ${workId}`)
+  }
+
+  const downloadLinks: WorkDownloadLink[] = []
+
+  $('li.download a[href*="/downloads/"]').each((_, el) => {
+    const href = $(el).attr('href')
+    if (!href) return
+
+    const downloadUrl = new URL(href, 'https://archiveofourown.org')
+    const format = downloadUrl.pathname.split('.').pop()?.toUpperCase()
+    if (format === 'HTML' || format === 'EPUB' || format === 'PDF' || format === 'MOBI' || format === 'AZW3') {
+      downloadLinks.push({ format, url: downloadUrl.toString() })
+    }
+  })
+
+  return downloadLinks
+
 }
 
 export { getWork, getChapters, getChapterContent, getWorkDownloadLinks }

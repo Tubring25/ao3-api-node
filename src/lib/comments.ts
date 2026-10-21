@@ -1,13 +1,13 @@
-import { request } from './request.js'
+import { requestResource } from './requestResource.js'
 import { parseCommentList } from './parsers.js'
 import {
-  AO3Error,
   RequestOptions,
   ChapterNotFoundError,
   Comment,
   CommentResults,
   WorkNotFoundError,
   AllCommentResults,
+  AllWorkCommentsOptions,
 } from '../types/index.js'
 import { iteratePages } from './pagination.js'
 import { mergeCommentThreads } from './commentThreads.js'
@@ -26,28 +26,21 @@ export async function getWorkComments(
 ): Promise<CommentResults> {
   const url = `https://archiveofourown.org/works/${encodeURIComponent(workId)}?show_comments=true&view_full_work=true&view_adult=true&page=${page}`
 
-  try {
-    const html = await request(url, requestOptions)
-    const result = parseCommentList(html, workId)
+  const html = await requestResource(url, requestOptions, () => new WorkNotFoundError(workId))
+  const result = parseCommentList(html, workId)
 
-    // Set workId for all comments since it might not be available in the HTML
-    const setWorkId = (comments: Comment[]): Comment[] => {
-      return comments.map(comment => ({
-        ...comment,
-        workId: comment.workId || workId,
-        replies: setWorkId(comment.replies)
-      }))
-    }
+  // Set workId for all comments since it might not be available in the HTML
+  const setWorkId = (comments: Comment[]): Comment[] => {
+    return comments.map(comment => ({
+      ...comment,
+      workId: comment.workId || workId,
+      replies: setWorkId(comment.replies)
+    }))
+  }
 
-    return {
-      ...result,
-      comments: setWorkId(result.comments)
-    }
-  } catch (error) {
-    if (error instanceof AO3Error && error.statusCode === 404) {
-      throw new WorkNotFoundError(workId)
-    }
-    throw error
+  return {
+    ...result,
+    comments: setWorkId(result.comments)
   }
 }
 
@@ -67,39 +60,48 @@ export async function getChapterComments(
 ): Promise<CommentResults> {
   const url = `https://archiveofourown.org/chapters/${encodeURIComponent(chapterId)}?show_comments=true&view_adult=true&page=${page}`
 
-  try {
-    const html = await request(url, requestOptions)
-    const result = parseCommentList(html, workId)
+  const html = await requestResource(url, requestOptions, () => new ChapterNotFoundError(workId, chapterId))
+  const result = parseCommentList(html, workId)
 
-    // Set workId and chapterId for all comments
-    const setIds = (comments: Comment[]): Comment[] => {
-      return comments.map(comment => ({
-        ...comment,
-        workId: comment.workId || workId,
-        chapterId: comment.chapterId || chapterId,
-        replies: setIds(comment.replies)
-      }))
-    }
+  // Set workId and chapterId for all comments
+  const setIds = (comments: Comment[]): Comment[] => {
+    return comments.map(comment => ({
+      ...comment,
+      workId: comment.workId || workId,
+      chapterId: comment.chapterId || chapterId,
+      replies: setIds(comment.replies)
+    }))
+  }
 
-    return {
-      ...result,
-      comments: setIds(result.comments)
-    }
-  } catch (error) {
-    if (error instanceof AO3Error && error.statusCode === 404) {
-      throw new ChapterNotFoundError(workId, chapterId)
-    }
-    throw error
+  return {
+    ...result,
+    comments: setIds(result.comments)
   }
 }
 
-export async function getAllWorkComments(workId: string, requestOptions?: RequestOptions): Promise<AllCommentResults> {
+/**
+ * Get every comment page of a work, merged into one thread tree
+ * @param workId The work ID to get comments for
+ * @param requestOptions Optional request options for each request
+ * @param options Page limit and delay between pages (default: 1000 ms)
+ * @returns Promise<AllCommentResults> All fetched comments with page counts
+ */
+export async function getAllWorkComments(
+  workId: string,
+  requestOptions?: RequestOptions,
+  options: AllWorkCommentsOptions = {}
+): Promise<AllCommentResults> {
   const pages: Comment[][] = []
-  let total = 1
+  let total = 0
   let totalPages = 1
 
   for await (const result of iteratePages(
-    page => getWorkComments(workId, page, requestOptions)
+    page => getWorkComments(workId, page, requestOptions),
+    {
+      maxPages: options.maxPages,
+      delayMs: options.delayMs ?? 1000,
+      signal: requestOptions?.signal
+    }
   )) {
     pages.push(result.comments)
     total = result.total
@@ -109,6 +111,7 @@ export async function getAllWorkComments(workId: string, requestOptions?: Reques
   return {
     comments: mergeCommentThreads(pages),
     total,
-    totalPages
+    totalPages,
+    fetchedPages: pages.length
   }
 }

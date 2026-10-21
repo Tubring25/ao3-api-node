@@ -1,5 +1,4 @@
 import { writeFile } from 'node:fs/promises'
-import { setTimeout as delay } from 'node:timers/promises'
 import { extname } from 'node:path'
 import { getUserBookmarks, iteratePages } from 'ao3-api-nodejs'
 
@@ -27,10 +26,10 @@ if (!username || !output || !['.json', '.csv'].includes(format)
     let totalBookmarks = 0
     let skippedBookmarks = 0
 
-    for await (const result of iteratePages(async page => {
-      if (page > 1) await delay(delayMs, undefined, { signal: controller.signal })
-      return getUserBookmarks(username, page, { timeoutMs: 30_000, signal: controller.signal })
-    }, { maxPages })) {
+    for await (const result of iteratePages(
+      page => getUserBookmarks(username, page, { timeoutMs: 30_000, signal: controller.signal }),
+      { maxPages, delayMs, signal: controller.signal }
+    )) {
       fetchedPages++
       totalPages = result.totalPages
       totalBookmarks = result.total

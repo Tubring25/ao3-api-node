@@ -52,7 +52,8 @@ export interface WorkStats {
  * Tagged information about a work
  */
 export interface WorkTags {
-  rating: string;
+  /** null when the page shows no rating or one this package does not know */
+  rating: Rating | null;
   warnings: string[];
   category: string[];
   fandoms: string[];

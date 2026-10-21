@@ -1,6 +1,8 @@
 import * as cheerio from 'cheerio';
+import type { Element } from 'domhandler';
 import { AO3Error, AuthenticationRequiredError, SearchResults, WorkSearchResult, BookmarkResults, BookmarkSearchResult, CommentResults, Comment } from '../types/index.js';
 import { buildCommentThreads } from './commentThreads.js'
+import { parseRating } from './constants.js'
 
 /**
  * Parses the HTML of a work listing page (search, tags)
@@ -47,8 +49,7 @@ export function parseWorkList(html: string): SearchResults {
 
 
 export function parseWorkBlurb(
-  // @ts-expect-error - Element is not exported from cheerio
-  element: cheerio.Element,
+  element: Element,
   $: cheerio.CheerioAPI
 ): WorkSearchResult {
   // We now use the passed-in Cheerio instance to wrap the element
@@ -86,7 +87,7 @@ export function parseWorkBlurb(
     complete: workElement.find('.required-tags .complete-yes').length > 0,
     fandoms: workElement.find('h5.fandoms a').map((i, fandomEl) => $(fandomEl).text()).get(),
     tags: {
-      rating: requiredTagText('rating'),
+      rating: parseRating(requiredTagText('rating')),
       warnings: tagTexts('warnings'),
       // Blurbs only show categories as a comma-separated required-tags symbol.
       category: workElement.find('ul.required-tags .category-none').length
@@ -172,8 +173,7 @@ export function parseWorkBookmarkList(html: string): BookmarkResults {
 }
 
 function parseBookmarkBlurb(
-  // @ts-expect-error - Element is not exported from cheerio
-  element: cheerio.Element,
+  element: Element,
   $: cheerio.CheerioAPI
 ): BookmarkSearchResult {
   const bookmarkElement = $(element)
@@ -218,8 +218,7 @@ function parseBookmarkBlurb(
 }
 
 function parseBookmarkWork(
-  // @ts-expect-error - Element is not exported from cheerio
-  element: cheerio.Element,
+  element: Element,
   $: cheerio.CheerioAPI
 ): BookmarkSearchResult['work'] {
   const workElement = $(element)
@@ -296,8 +295,7 @@ export function parseCommentList(html: string, workId?: string): CommentResults 
 }
 
 function parseComment(
-  // @ts-expect-error - Element is not exported from cheerio
-  element: cheerio.Element,
+  element: Element,
   $: cheerio.CheerioAPI
 ): Comment {
   const commentElement = $(element)

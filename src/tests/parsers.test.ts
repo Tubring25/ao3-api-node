@@ -133,7 +133,7 @@ describe('parseWorkBlurb', () => {
     `
     
     const $ = cheerio.load(html)
-    const element = $('li.work').get(0)
+    const element = $('li.work').get(0)!
     const result = parseWorkBlurb(element, $)
     
     expect(result.id).toBe('789')
@@ -154,7 +154,7 @@ describe('parseWorkBlurb', () => {
     expect(result.kudos).toBe(0)
     expect(result.hits).toBe(0)
     expect(result.tags).toEqual({
-      rating: '',
+      rating: null,
       warnings: [],
       category: [],
       fandoms: [],
@@ -178,11 +178,24 @@ describe('parseWorkBlurb', () => {
     `
 
     const $ = cheerio.load(html)
-    const result = parseWorkBlurb($('li.work').get(0), $)
+    const result = parseWorkBlurb($('li.work').get(0)!, $)
 
     expect(result.title).toBe('Padded Title')
     expect(result.tags.rating).toBe('Not Rated')
     expect(result.tags.category).toEqual([])
+  })
+
+  it('should not report a rating this package does not know', () => {
+    const html = `
+      <li class="work blurb group" id="work_457">
+        <ul class="required-tags">
+          <li><span class="rating-other rating" title="Something New"><span class="text">Something New</span></span></li>
+        </ul>
+      </li>
+    `
+
+    const $ = cheerio.load(html)
+    expect(parseWorkBlurb($('li.work').get(0)!, $).tags.rating).toBeNull()
   })
 
   it('should handle missing work ID', () => {
@@ -207,7 +220,7 @@ describe('parseWorkBlurb', () => {
     `
     
     const $ = cheerio.load(html)
-    const element = $('li.work').get(0)
+    const element = $('li.work').get(0)!
     const result = parseWorkBlurb(element, $)
     
     expect(result.id).toBe('')

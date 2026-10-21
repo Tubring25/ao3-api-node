@@ -42,3 +42,8 @@ export const crossoverMap: Record<CrossoverMode, string> = {
   'exclude': 'F',
   'only': 'T'
 };
+
+/** Returns the rating if AO3 shows one of the known rating names. */
+export function parseRating(text: string): Rating | null {
+  return Object.hasOwn(ratingMap, text) ? text as Rating : null
+}

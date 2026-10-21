@@ -106,6 +106,36 @@ describe('search', () => {
     }))
   })
 
+  it('should parse the tags shown in each work blurb', async () => {
+    const results = await search({ query: 'Kiss me, Cupcake' })
+
+    expect(results.works[0].tags).toEqual({
+      rating: 'Mature',
+      warnings: ['No Archive Warnings Apply'],
+      category: ['F/F'],
+      fandoms: ['Arcane: League of Legends (Cartoon 2021)'],
+      relationships: ['Caitlyn/Vi (League of Legends)'],
+      characters: ['Vi (League of Legends)', 'Caitlyn (League of Legends)'],
+      freeforms: [
+        'Alternate Universe - Roommates/Housemates',
+        'Not Canon Compliant',
+        'Fluff',
+        'First Kiss',
+        'Pining',
+        'Caitlyn is a Little Shit',
+        'Friends to Lovers',
+        'very self-indulgent once again LOL'
+      ]
+    })
+  })
+
+  it('should split multiple categories from a blurb', async () => {
+    const results = await search({ query: 'Kiss me, Cupcake' })
+    const work = results.works.find(({ id }) => id === '61826785')
+
+    expect(work?.tags.category).toEqual(['Multi', 'Other'])
+  })
+
   it('should use null for an unknown chapter total', async () => {
     const results = await search({ query: 'Kiss me, Cupcake' })
     const work = results.works.find(({ id }) => id === '61748254')

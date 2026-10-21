@@ -134,6 +134,25 @@ describe('getWork', () => {
     expect(work.collections).toEqual([])
   });
 
+  it('should request the default work page instead of the full work text', async () => {
+    await getWork('35961484')
+    await getChapters('35961484')
+
+    for (const [options] of vi.mocked(gotScraping).mock.calls) {
+      expect(options).toEqual(expect.objectContaining({
+        url: 'https://archiveofourown.org/works/35961484?view_adult=true'
+      }))
+    }
+  })
+
+  it('should keep the work ID inside its URL path segment', async () => {
+    await expect(getWork('1/../2')).rejects.toBeInstanceOf(WorkNotFoundError)
+
+    expect(gotScraping).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://archiveofourown.org/works/1%2F..%2F2?view_adult=true'
+    }))
+  })
+
   it('should reject an empty work page', async () => {
     await expect(getWork('111111')).rejects.toBeInstanceOf(AO3Error)
   })

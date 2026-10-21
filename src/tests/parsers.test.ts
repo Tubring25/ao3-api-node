@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseWorkList, parseWorkBlurb } from '../lib/parsers.js'
+import { parseWorkList, parseWorkBlurb, parseCommentList } from '../lib/parsers.js'
 import * as cheerio from 'cheerio'
 import { AO3Error } from '../types/index.js'
 
@@ -153,6 +153,36 @@ describe('parseWorkBlurb', () => {
     expect(result.words).toBe(0)
     expect(result.kudos).toBe(0)
     expect(result.hits).toBe(0)
+    expect(result.tags).toEqual({
+      rating: '',
+      warnings: [],
+      category: [],
+      fandoms: [],
+      relationships: [],
+      characters: [],
+      freeforms: []
+    })
+  })
+
+  it('should not report a category for works marked as having none', () => {
+    const html = `
+      <li class="work blurb group" id="work_456">
+        <h4 class="heading">
+          <a href="/works/456">  Padded Title  </a>
+        </h4>
+        <ul class="required-tags">
+          <li><span class="rating-notrated rating" title="Not Rated"><span class="text">Not Rated</span></span></li>
+          <li><span class="category-none category" title="No category"><span class="text">No category</span></span></li>
+        </ul>
+      </li>
+    `
+
+    const $ = cheerio.load(html)
+    const result = parseWorkBlurb($('li.work').get(0), $)
+
+    expect(result.title).toBe('Padded Title')
+    expect(result.tags.rating).toBe('Not Rated')
+    expect(result.tags.category).toEqual([])
   })
 
   it('should handle missing work ID', () => {
@@ -182,5 +212,28 @@ describe('parseWorkBlurb', () => {
     
     expect(result.id).toBe('')
     expect(result.title).toBe('Work Without ID Attr')
+  })
+})
+
+describe('parseCommentList', () => {
+  it('should take the login from pseud links as the author ID', () => {
+    const html = `
+      <div id="comments">
+        <ol class="thread">
+          <li class="comment" id="comment_1">
+            <h4 class="heading byline"><a href="/users/realname/pseuds/penname">penname (realname)</a></h4>
+            <blockquote class="userstuff"><p>Hello</p></blockquote>
+          </li>
+          <li class="comment" id="comment_2">
+            <h4 class="heading byline"><a href="/users/plainname">plainname</a></h4>
+            <blockquote class="userstuff"><p>Hi</p></blockquote>
+          </li>
+        </ol>
+      </div>
+    `
+
+    const result = parseCommentList(html)
+
+    expect(result.comments.map(comment => comment.authorId)).toEqual(['realname', 'plainname'])
   })
 })

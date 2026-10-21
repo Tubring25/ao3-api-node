@@ -63,10 +63,15 @@ export function parseWorkBlurb(
   const summary = workElement.find('blockquote.userstuff.summary').text().trim() || null
   const [postedChapters, totalChapters] = workElement.find('dd.chapters').text().trim().split('/')
   const parsedTotalChapters = parseInt(totalChapters, 10)
+  const tagTexts = (className: string): string[] => workElement.find(`ul.tags li.${className} a.tag`)
+    .map((i, tagEl) => $(tagEl).text().trim().replace(/\s+/g, ' '))
+    .get()
+  const requiredTagText = (className: string): string => workElement
+    .find(`ul.required-tags .${className} .text`).first().text().trim()
 
   return {
     id: workElement.attr('id')?.replace('work_', '') || '',
-    title: workElement.find('h4.heading a').first().text(),
+    title: workElement.find('h4.heading a').first().text().trim(),
     authors: authors,
     author: authors[0] ?? '',
     summary,
@@ -80,6 +85,18 @@ export function parseWorkBlurb(
     bookmarks: parseStat('bookmarks'),
     complete: workElement.find('.required-tags .complete-yes').length > 0,
     fandoms: workElement.find('h5.fandoms a').map((i, fandomEl) => $(fandomEl).text()).get(),
+    tags: {
+      rating: requiredTagText('rating'),
+      warnings: tagTexts('warnings'),
+      // Blurbs only show categories as a comma-separated required-tags symbol.
+      category: workElement.find('ul.required-tags .category-none').length
+        ? []
+        : requiredTagText('category').split(',').map(category => category.trim()).filter(Boolean),
+      fandoms: workElement.find('h5.fandoms a.tag').map((i, fandomEl) => $(fandomEl).text().trim()).get(),
+      relationships: tagTexts('relationships'),
+      characters: tagTexts('characters'),
+      freeforms: tagTexts('freeforms')
+    },
     words: parseStat('words'),
     kudos: parseStat('kudos'),
     hits: parseStat('hits'),
@@ -298,16 +315,22 @@ function parseComment(
   const chapterMatch = commentElement.find('a[href*="/chapters/"]').attr('href')?.match(/\/chapters\/(\d+)/)
   const chapterId = chapterMatch?.[1] || undefined
 
-  const authorElement = commentElement.find('.byline a').first()
-  const author = authorElement.text().trim()
-  const authorId = authorElement.attr('href')?.replace('/users/', '') || undefined
-  const isAuthorGuest = authorElement.hasClass('guest')
+  // Registered commenters link to /users/<login>/pseuds/<pseud>; guests are a
+  // plain name followed by a "(Guest)" role. The byline also links the chapter.
+  const byline = commentElement.find('.byline').first()
+  const authorLink = byline.children('a[href*="/users/"]').first()
+  const guestName = byline.children('span').not('.role, .parent, .datetime').first()
+  const author = (authorLink.length ? authorLink : guestName).text().trim()
+  const authorId = authorLink.attr('href')?.match(/\/users\/([^/?#]+)/)?.[1] || undefined
+  const isAuthorGuest = commentElement.hasClass('guest') || byline.children('.role').length > 0
 
   const directContent = commentElement.children('.userstuff').first()
   const legacyContent = commentElement.children('.comment').first().find('.userstuff').first()
   const content = (directContent.length ? directContent : legacyContent).html() || ''
-  const posted = commentElement.find('.datetime').text().trim()
-  const edited = commentElement.find('.edited').text().trim() || undefined
+  const datetime = commentElement.find('.posted.datetime').first()
+  const posted = (datetime.length ? datetime : commentElement.find('.datetime').first())
+    .text().trim().replace(/\s+/g, ' ')
+  const edited = commentElement.find('.edited').first().text().trim().replace(/\s+/g, ' ') || undefined
 
   const actionLinks = commentElement.find('ul.actions a')
   const actionCommentId = (label: string): string | undefined => {

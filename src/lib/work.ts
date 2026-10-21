@@ -9,7 +9,7 @@ import { request } from './request.js';
  * @returns {Promise<Work>} The work details
  */
 async function getWork(workId: string, options?: RequestOptions): Promise<Work> {
-  const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
+  const url = `https://archiveofourown.org/works/${encodeURIComponent(workId)}?view_adult=true`
 
   try {
     const html = await request(url, options)
@@ -116,7 +116,7 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
  * @returns A promise that resolves to an array of chapters
  */
 async function getChapters(workId: string, options?: RequestOptions): Promise<Chapter[]> {
-  const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
+  const url = `https://archiveofourown.org/works/${encodeURIComponent(workId)}?view_adult=true`
   try {
     const html = await request(url, options)
     const $ = cheerio.load(html)
@@ -164,10 +164,10 @@ async function getChapterContent(
   chapterId: string,
   options?: RequestOptions
 ): Promise<ChapterContent> {
-  const chapterUrl = `https://archiveofourown.org/works/${workId}/chapters/${chapterId}?view_adult=true`
+  const chapterUrl = `https://archiveofourown.org/works/${encodeURIComponent(workId)}/chapters/${encodeURIComponent(chapterId)}?view_adult=true`
   // getChapters represents a standalone work with its work ID.
   const url = chapterId === workId
-    ? `https://archiveofourown.org/works/${workId}?view_adult=true`
+    ? `https://archiveofourown.org/works/${encodeURIComponent(workId)}?view_adult=true`
     : chapterUrl
   try {
     const html = await request(url, options)
@@ -219,7 +219,7 @@ async function getChapterContent(
 }
 
 async function getWorkDownloadLinks(workId: string, options?: RequestOptions): Promise<WorkDownloadLink[]> {
-  const url = `https://archiveofourown.org/works/${workId}?view_adult=true&view_full_work=true`
+  const url = `https://archiveofourown.org/works/${encodeURIComponent(workId)}?view_adult=true`
 
   try {
     const html = await request(url, options)

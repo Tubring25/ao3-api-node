@@ -8,6 +8,7 @@ import {
   CommentResults,
   WorkNotFoundError,
   AllCommentResults,
+  AllWorkCommentsOptions,
 } from '../types/index.js'
 import { iteratePages } from './pagination.js'
 import { mergeCommentThreads } from './commentThreads.js'
@@ -93,13 +94,29 @@ export async function getChapterComments(
   }
 }
 
-export async function getAllWorkComments(workId: string, requestOptions?: RequestOptions): Promise<AllCommentResults> {
+/**
+ * Get every comment page of a work, merged into one thread tree
+ * @param workId The work ID to get comments for
+ * @param requestOptions Optional request options for each request
+ * @param options Page limit and delay between pages (default: 1000 ms)
+ * @returns Promise<AllCommentResults> All fetched comments with page counts
+ */
+export async function getAllWorkComments(
+  workId: string,
+  requestOptions?: RequestOptions,
+  options: AllWorkCommentsOptions = {}
+): Promise<AllCommentResults> {
   const pages: Comment[][] = []
-  let total = 1
+  let total = 0
   let totalPages = 1
 
   for await (const result of iteratePages(
-    page => getWorkComments(workId, page, requestOptions)
+    page => getWorkComments(workId, page, requestOptions),
+    {
+      maxPages: options.maxPages,
+      delayMs: options.delayMs ?? 1000,
+      signal: requestOptions?.signal
+    }
   )) {
     pages.push(result.comments)
     total = result.total
@@ -109,6 +126,7 @@ export async function getAllWorkComments(workId: string, requestOptions?: Reques
   return {
     comments: mergeCommentThreads(pages),
     total,
-    totalPages
+    totalPages,
+    fetchedPages: pages.length
   }
 }

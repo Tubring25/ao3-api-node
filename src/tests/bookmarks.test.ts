@@ -12,6 +12,14 @@ vi.mock('got-scraping', () => ({
       const mockHtml = await fs.readFile(path.join(__dirname, '../fixtures/user-testuser-bookmarks.html'), 'utf-8')
       return { statusCode: 200, body: mockHtml }
     }
+    else if(options.url.includes('/users/TheHomelyBadger/bookmarks')) {
+      const mockHtml = await fs.readFile(path.join(__dirname, '../fixtures/user-TheHomelyBadger-bookmarks.html'), 'utf-8')
+      return { statusCode: 200, body: mockHtml }
+    }
+    else if(options.url.includes('/works/35961484/bookmarks')) {
+      const mockHtml = await fs.readFile(path.join(__dirname, '../fixtures/work-35961484-bookmarks.html'), 'utf-8')
+      return { statusCode: 200, body: mockHtml }
+    }
     else if(options.url.includes('/works/123456/bookmarks')) {
       const mockHtmlPath = path.join(__dirname, '../fixtures', 'work-bookmarks-current.html')
       const mockHtml = await fs.readFile(mockHtmlPath, 'utf-8')
@@ -26,6 +34,50 @@ afterEach(() => {
 })
 
 describe('getUserBookmarks', () => {
+  it('should parse a saved AO3 user bookmarks page', async () => {
+    const result = await getUserBookmarks('TheHomelyBadger')
+
+    expect(result).toEqual(expect.objectContaining({ total: 53, page: 1, totalPages: 3 }))
+    expect(result.bookmarks).toHaveLength(20)
+
+    const [first] = result.bookmarks
+    expect(first.bookmark).toEqual({
+      id: '3229677926',
+      workId: '87629446',
+      workTitle: 'supersonic (all eyes on us)',
+      workAuthor: 'wolf_dyke',
+      userId: 'TheHomelyBadger',
+      username: 'TheHomelyBadger',
+      created: '24 Oct 2026',
+      notes: null,
+      tags: [],
+      public: true,
+      rec: false
+    })
+    expect(first.work).toEqual(expect.objectContaining({
+      title: 'supersonic (all eyes on us)',
+      authors: ['wolf_dyke'],
+      rating: 'Explicit',
+      warnings: ['No Archive Warnings Apply'],
+      categories: ['F/F'],
+      relationships: ['Caitlyn/Vi (League of Legends)'],
+      words: 96725,
+      chapters: { posted: 7, total: 20 },
+      completed: false,
+      kudos: 146,
+      comments: 113,
+      bookmarks: 56,
+      hits: 5076
+    }))
+  })
+
+  it('should leave the work ID empty for a bookmarked series', async () => {
+    const result = await getUserBookmarks('TheHomelyBadger')
+    const series = result.bookmarks.find(({ bookmark }) => bookmark.id === '1893835204')
+
+    expect(series?.bookmark.workId).toBe('')
+  })
+
   it('should return user bookmarks with correct structure', async () => {
     const result = await getUserBookmarks('testuser')
 
@@ -70,6 +122,43 @@ describe('getUserBookmarks', () => {
 })
 
 describe('getWorkBookmarks', () => {
+  it('should parse a saved AO3 work bookmarks page', async () => {
+    const result = await getWorkBookmarks('35961484')
+
+    expect(result).toEqual(expect.objectContaining({ total: 686, page: 1, totalPages: 35 }))
+    expect(result.bookmarks).toHaveLength(20)
+    expect(result.bookmarks[0].bookmark).toEqual({
+      id: null,
+      workId: '35961484',
+      workTitle: 'Thank God You Introduced Me to Your Sister',
+      workAuthor: 'AmberZ10',
+      userId: 'GettingTired',
+      username: 'GettingTired',
+      created: '09 Sep 2026',
+      notes: null,
+      tags: [],
+      public: true,
+      rec: false
+    })
+    expect(result.bookmarks[0].work).toEqual(expect.objectContaining({
+      words: 6095,
+      chapters: { posted: 2, total: 2 },
+      completed: true,
+      kudos: 5261,
+      bookmarks: 686,
+      hits: 63529
+    }))
+  })
+
+  it('should read bookmark notes from a saved AO3 work bookmarks page', async () => {
+    const result = await getWorkBookmarks('35961484')
+    const notesByUser = new Map(result.bookmarks.map(({ bookmark }) => [bookmark.username, bookmark.notes]))
+
+    expect(notesByUser.get('Ruby_red_fangirl')).toBe('Thank God you introduced me to your sister - Sarah barrios')
+    expect(notesByUser.get('Blackwings05')).toContain('Can we not?')
+    expect(notesByUser.get('morbu13')).toBeNull()
+  })
+
   it('should return work bookmarks with correct structure', async () => {
     const result = await getWorkBookmarks('123456')
 

@@ -72,7 +72,7 @@ async function getWork(workId: string, options?: RequestOptions): Promise<Work> 
     title: $('h2.title.heading').text().trim(),
     author: authors[0] ?? '',
     authors: authors,
-    summary: $('.summary .userstuff').html() || '',
+    summary: $('.summary .userstuff').first().html()?.trim() || null,
     language: $('dd.language').text().trim(),
     stats: {
       published: statsNode.find('dd.published').text().trim(),

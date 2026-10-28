@@ -87,7 +87,8 @@ export interface Work {
   title: string;
   author: string;
   authors: string[];
-  summary: string; // HTML string
+  /** HTML, or null when the work has no summary */
+  summary: string | null;
   series: WorkSeries[];
   collections: WorkCollection[];
   language: string;
@@ -103,7 +104,9 @@ export interface WorkSearchResult {
   title: string;
   author: string;
   authors: string[];
+  /** HTML, or null when the work has no summary */
   summary: string | null;
+  /** The date shown on the blurb, which is when the work was last updated */
   date: string;
   language: string;
   chapters: {

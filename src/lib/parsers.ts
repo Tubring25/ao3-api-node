@@ -61,7 +61,10 @@ export function parseWorkBlurb(
   }
 
   const authors = workElement.find('a[rel="author"]').map((i, authorEl) => $(authorEl).text().trim()).get()
-  const summary = workElement.find('blockquote.userstuff.summary').text().trim() || null
+  // Bookmark blurbs also contain the bookmarker's notes and date, after the work's own.
+  const summary = workElement.find('blockquote.userstuff.summary').first().html()?.trim() || null
+  const headingWorkId = workElement.find('h4.heading a[href*="/works/"]').first()
+    .attr('href')?.match(/\/works\/(\d+)/)?.[1]
   const [postedChapters, totalChapters] = workElement.find('dd.chapters').text().trim().split('/')
   const parsedTotalChapters = parseInt(totalChapters, 10)
   const tagTexts = (className: string): string[] => workElement.find(`ul.tags li.${className} a.tag`)
@@ -71,12 +74,13 @@ export function parseWorkBlurb(
     .find(`ul.required-tags .${className} .text`).first().text().trim()
 
   return {
-    id: workElement.attr('id')?.replace('work_', '') || '',
+    // Bookmark blurbs are identified by their bookmark ID, so fall back to the heading link.
+    id: workElement.attr('id')?.match(/^work_(\d+)$/)?.[1] || headingWorkId || '',
     title: workElement.find('h4.heading a').first().text().trim(),
     authors: authors,
     author: authors[0] ?? '',
     summary,
-    date: workElement.find('p.datetime').text().trim(),
+    date: workElement.find('p.datetime').first().text().trim(),
     language: workElement.find('dd.language').text().trim(),
     chapters: {
       posted: parseInt(postedChapters, 10) || 0,
@@ -85,7 +89,7 @@ export function parseWorkBlurb(
     comments: parseStat('comments'),
     bookmarks: parseStat('bookmarks'),
     complete: workElement.find('.required-tags .complete-yes').length > 0,
-    fandoms: workElement.find('h5.fandoms a').map((i, fandomEl) => $(fandomEl).text()).get(),
+    fandoms: workElement.find('h5.fandoms a').map((i, fandomEl) => $(fandomEl).text().trim()).get(),
     tags: {
       rating: parseRating(requiredTagText('rating')),
       warnings: tagTexts('warnings'),
@@ -141,7 +145,7 @@ export function parseWorkBookmarkList(html: string): BookmarkResults {
     return { bookmarks: [], total, page, totalPages }
   }
 
-  const work = parseBookmarkWork(workElement, $)
+  const work = parseWorkBlurb(workElement, $)
   const workLink = $(workElement).find('h4.heading a[href*="/works/"]').first()
   const workId = workLink.attr('href')?.match(/\/works\/(\d+)/)?.[1] || ''
 
@@ -182,7 +186,7 @@ function parseBookmarkBlurb(
   const bookmarkId = bookmarkElement.attr('id')?.replace('bookmark_', '') || null
   const workLink = bookmarkElement.find('h4.heading a').first()
   const workId = workLink.attr('href')?.match(/\/works\/(\d+)/)?.[1] || ''
-  const work = parseBookmarkWork(element, $)
+  const work = parseWorkBlurb(element, $)
 
   const userModule = bookmarkElement.find('.user').first()
   const userLink = userModule.find('a[href*="/users/"]').first()
@@ -215,48 +219,6 @@ function parseBookmarkBlurb(
       rec: isRec
     },
     work
-  }
-}
-
-function parseBookmarkWork(
-  element: Element,
-  $: cheerio.CheerioAPI
-): BookmarkSearchResult['work'] {
-  const workElement = $(element)
-  const parseStat = (className: string): number => {
-    const text = workElement.find(`dd.${className}`).text().replace(/,/g, '')
-    return parseInt(text, 10) || 0
-  }
-  const chapterText = workElement.find('dd.chapters').text().trim()
-  const chapterMatch = chapterText.match(/(\d+)\/(\d+|\?)/)
-
-  const authors = workElement.find('a[rel="author"]').map((_, el) => $(el).text().trim()).get()
-
-  return {
-    title: workElement.find('h4.heading a[href*="/works/"]').first().text().trim(),
-    author: authors[0] ?? '',
-    authors,
-    summary: workElement.find('.summary').first().text().trim(),
-    rating: workElement.find('.rating .text').text().trim(),
-    warnings: workElement.find('.warnings .text').map((i, el) => $(el).text().trim()).get(),
-    categories: workElement.find('.category .text').map((i, el) => $(el).text().trim()).get(),
-    fandoms: workElement.find('.fandoms a').map((i, el) => $(el).text().trim()).get(),
-    relationships: workElement.find('.relationships a').map((i, el) => $(el).text().trim()).get(),
-    characters: workElement.find('.characters a').map((i, el) => $(el).text().trim()).get(),
-    additionalTags: workElement.find('.freeforms a').map((i, el) => $(el).text().trim()).get(),
-    language: workElement.find('dd.language').text().trim(),
-    published: workElement.find('dd.published').text().trim(),
-    updated: workElement.find('dd.status').text().trim() || null,
-    words: parseStat('words'),
-    chapters: {
-      posted: chapterMatch ? parseInt(chapterMatch[1], 10) : 1,
-      total: chapterMatch && chapterMatch[2] !== '?' ? parseInt(chapterMatch[2], 10) : null
-    },
-    completed: chapterMatch ? chapterMatch[1] === chapterMatch[2] : true,
-    kudos: parseStat('kudos'),
-    comments: parseStat('comments'),
-    bookmarks: parseStat('bookmarks'),
-    hits: parseStat('hits')
   }
 }
 

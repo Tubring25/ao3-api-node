@@ -55,20 +55,28 @@ describe('getUserBookmarks', () => {
       rec: false
     })
     expect(first.work).toEqual(expect.objectContaining({
+      id: '87629446',
       title: 'supersonic (all eyes on us)',
       authors: ['wolf_dyke'],
-      rating: 'Explicit',
-      warnings: ['No Archive Warnings Apply'],
-      categories: ['F/F'],
-      relationships: ['Caitlyn/Vi (League of Legends)'],
+      language: 'English',
       words: 96725,
       chapters: { posted: 7, total: 20 },
-      completed: false,
+      complete: false,
       kudos: 146,
       comments: 113,
       bookmarks: 56,
       hits: 5076
     }))
+    expect(first.work.tags).toEqual(expect.objectContaining({
+      rating: 'Explicit',
+      warnings: ['No Archive Warnings Apply'],
+      category: ['F/F'],
+      fandoms: ['Arcane: League of Legends (Cartoon 2021)', 'League of Legends (Video Game)'],
+      relationships: ['Caitlyn/Vi (League of Legends)']
+    }))
+    expect(first.work.tags.freeforms).toContain('somewhat slow burn')
+    expect(first.work.summary).toContain('<p>“I told you not to call me Cait.”</p>')
+    expect(first.work.date).not.toBe(first.bookmark.created)
   })
 
   it('should leave the work ID empty for a bookmarked series', async () => {
@@ -76,6 +84,8 @@ describe('getUserBookmarks', () => {
     const series = result.bookmarks.find(({ bookmark }) => bookmark.id === '1893835204')
 
     expect(series?.bookmark.workId).toBe('')
+    expect(series?.work.id).toBe('')
+    expect(series?.work.title).toBe('Homecoming AU')
   })
 
   it('should return user bookmarks with correct structure', async () => {
@@ -141,13 +151,19 @@ describe('getWorkBookmarks', () => {
       rec: false
     })
     expect(result.bookmarks[0].work).toEqual(expect.objectContaining({
+      id: '35961484',
+      date: '26 Dec 2021',
       words: 6095,
       chapters: { posted: 2, total: 2 },
-      completed: true,
+      complete: true,
       kudos: 5261,
       bookmarks: 686,
       hits: 63529
     }))
+    expect(result.bookmarks[0].work.tags.relationships).toEqual([
+      'Caitlyn/Vi (League of Legends)',
+      'Ekko/Jinx (League of Legends)'
+    ])
   })
 
   it('should read bookmark notes from a saved AO3 work bookmarks page', async () => {

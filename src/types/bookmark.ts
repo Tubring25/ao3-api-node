@@ -1,3 +1,5 @@
+import type { WorkSearchResult } from './work.js';
+
 export interface Bookmark {
   id: string | null;
   workId: string;
@@ -14,32 +16,8 @@ export interface Bookmark {
 
 export interface BookmarkSearchResult {
   bookmark: Bookmark;
-  work: {
-    title: string;
-    author: string;
-    authors: string[];
-    summary: string;
-    rating: string;
-    warnings: string[];
-    categories: string[];
-    fandoms: string[];
-    relationships: string[];
-    characters: string[];
-    additionalTags: string[];
-    language: string;
-    published: string;
-    updated: string | null;
-    words: number;
-    chapters: {
-      posted: number;
-      total: number | null;
-    };
-    completed: boolean;
-    kudos: number;
-    comments: number;
-    bookmarks: number;
-    hits: number;
-  };
+  /** The bookmarked work, in the same shape as search results. */
+  work: WorkSearchResult;
 }
 
 export interface BookmarkResults {

@@ -198,7 +198,7 @@ describe('parseWorkBlurb', () => {
     expect(parseWorkBlurb($('li.work').get(0)!, $).tags.rating).toBeNull()
   })
 
-  it('should handle missing work ID', () => {
+  it('should take the work ID from the heading link without a work_ element ID', () => {
     const html = `
       <li class="work blurb group">
         <h4 class="heading">
@@ -223,7 +223,7 @@ describe('parseWorkBlurb', () => {
     const element = $('li.work').get(0)!
     const result = parseWorkBlurb(element, $)
     
-    expect(result.id).toBe('')
+    expect(result.id).toBe('999')
     expect(result.title).toBe('Work Without ID Attr')
   })
 })

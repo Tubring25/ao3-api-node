@@ -159,7 +159,8 @@ export function parseWorkBookmarkList(html: string): BookmarkResults {
           userId: userLink.attr('href')?.match(/\/users\/([^/]+)/)?.[1] || '',
           username: userLink.text().trim(),
           created: bookmarkElement.find('.datetime').text().trim(),
-          notes: bookmarkElement.find('.notes').first().text().trim() || null,
+          // AO3 shows these notes as a blockquote.userstuff.summary, without a notes class.
+          notes: bookmarkElement.find('.notes, blockquote.userstuff').first().text().trim() || null,
           tags: bookmarkElement.find('.tag').map((j, tag) => $(tag).text().trim()).get(),
           public: !bookmarkElement.find('.private').length,
           rec: !!bookmarkElement.find('.rec').length

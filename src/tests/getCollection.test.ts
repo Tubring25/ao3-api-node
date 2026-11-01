@@ -100,6 +100,12 @@ vi.mock('got-scraping', () => {
       return { statusCode: 200, body: '<html><body>Invalid page</body></html>' }
     }
 
+    if (pathname === '/collections/CaitlynKiramman_Violet') {
+      const fixturePath = path.join(__dirname, '../fixtures', 'collection-CaitlynKiramman_Violet.html')
+      const body = await fs.readFile(fixturePath, 'utf-8')
+      return { statusCode: 200, body }
+    }
+
     if (pathname === '/collections/test_collection') {
       const fixturePath = path.join(__dirname, '../fixtures', 'collection-test_collection.html')
       const body = await fs.readFile(fixturePath, 'utf-8')
@@ -137,6 +143,23 @@ afterEach(() => {
 })
 
 describe('getCollection', () => {
+  it('should parse a saved AO3 collection page', async () => {
+    const collection = await getCollection('CaitlynKiramman_Violet')
+
+    expect(collection).toEqual({
+      name: 'CaitlynKiramman_Violet',
+      title: 'CaitVi',
+      descriptionHtml: null,
+      closed: true,
+      moderated: false,
+      unrevealed: false,
+      anonymous: false,
+      challengeType: null,
+      workCount: 0,
+      bookmarkCount: 7
+    })
+  })
+
   it('should return core collection information', async () => {
     const collection = await getCollection('test_collection')
 
